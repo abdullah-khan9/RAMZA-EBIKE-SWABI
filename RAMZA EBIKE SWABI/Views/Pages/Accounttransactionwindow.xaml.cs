@@ -15,14 +15,9 @@ namespace Ramza_EBike_Swabi.Views.Pages
             InitializeComponent();
             dpDate.SelectedDate = DateTime.Today;
             txtTime.Text = DateTime.Now.ToString("HH:mm");
-
-            // Safe: highlight after full render
             Loaded += (_, __) => HighlightSelected();
         }
 
-        // ===========================
-        // HIGHLIGHT SELECTED BORDER
-        // ===========================
         private void Option_Checked(object sender, RoutedEventArgs e)
             => HighlightSelected();
 
@@ -33,23 +28,16 @@ namespace Ramza_EBike_Swabi.Views.Pages
                 var active = new SolidColorBrush(Color.FromRgb(0x1B, 0x40, 0x79));
                 var inactive = new SolidColorBrush(Color.FromRgb(0xCC, 0xCC, 0xCC));
 
-                BorderConvert.BorderBrush = rbConvertCashToAccount.IsChecked == true
-                                                    ? active : inactive;
-                BorderDepositCash.BorderBrush = rbDepositCash.IsChecked == true
-                                                    ? active : inactive;
-                BorderDepositAccount.BorderBrush = rbDepositAccount.IsChecked == true
-                                                    ? active : inactive;
-                BorderWithdrawAccount.BorderBrush = rbWithdrawAccount.IsChecked == true
-                                                    ? active : inactive;
-                BorderWithdrawCash.BorderBrush = rbWithdrawCash.IsChecked == true
-                                                    ? active : inactive;
+                BorderConvert.BorderBrush = rbConvertCashToAccount.IsChecked == true ? active : inactive;
+                BorderDepositCash.BorderBrush = rbDepositCash.IsChecked == true ? active : inactive;
+                BorderDepositAccount.BorderBrush = rbDepositAccount.IsChecked == true ? active : inactive;
+                BorderWithdrawAccount.BorderBrush = rbWithdrawAccount.IsChecked == true ? active : inactive;
+                BorderWithdrawCash.BorderBrush = rbWithdrawCash.IsChecked == true ? active : inactive;
+                BorderWithdrawFromAccount.BorderBrush = rbWithdrawFromAccount.IsChecked == true ? active : inactive; // ✅ NEW
             }
-            catch { /* suppress any highlight error — non-critical */ }
+            catch { }
         }
 
-        // ===========================
-        // SAVE
-        // ===========================
         private async void Save_Click(object sender, RoutedEventArgs e)
         {
             try
@@ -79,11 +67,13 @@ namespace Ramza_EBike_Swabi.Views.Pages
                 if (TimeSpan.TryParse(txtTime.Text, out TimeSpan time))
                     txnDate = txnDate.Add(time);
 
+                // ✅ rbWithdrawFromAccount → WithdrawFromAccount (sirf BankBalance kam hoga)
                 TransactionType type;
                 if (rbConvertCashToAccount.IsChecked == true) type = TransactionType.ConvertCashToAccount;
                 else if (rbDepositCash.IsChecked == true) type = TransactionType.CashDeposit;
                 else if (rbDepositAccount.IsChecked == true) type = TransactionType.DepositToAccount;
                 else if (rbWithdrawAccount.IsChecked == true) type = TransactionType.CashWithdraw;
+                else if (rbWithdrawFromAccount.IsChecked == true) type = TransactionType.WithdrawFromAccount;
                 else type = TransactionType.WithdrawFromCash;
 
                 var (success, message) = await _accountService.ProcessTransactionAsync(
@@ -103,8 +93,7 @@ namespace Ramza_EBike_Swabi.Views.Pages
                 string detail = ex.InnerException?.InnerException?.Message
                              ?? ex.InnerException?.Message
                              ?? "No detail";
-                MessageBox.Show(
-                    $"Error:\n{ex.Message}\n\nDetail:\n{detail}",
+                MessageBox.Show($"Error:\n{ex.Message}\n\nDetail:\n{detail}",
                     "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }

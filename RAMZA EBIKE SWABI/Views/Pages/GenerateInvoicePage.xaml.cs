@@ -451,10 +451,10 @@ namespace Ramza_EBike_Swabi.Views.Pages
                     {
                         string invoiceRef = $"INV-{invoice.CustomerInvoiceId:D4}";
                         await _accountService.RecordInvoicePaymentAsync(
-                            newPaid,
-                            txtName.Text.Trim(),
-                            invoiceRef,
-                            isCash: rbCash?.IsChecked == true);
+                             newPaid,
+    txtName.Text.Trim(),   // ✅ customerName pass ho raha hai
+    invoiceRef,             // ✅ INV-XXXX pass ho raha hai
+    isCash: rbCash?.IsChecked == true);
                     }
                 }
                 else

@@ -56,27 +56,43 @@ namespace Ramza_EBike_Swabi.Services
             switch (type)
             {
                 case TransactionType.CashDeposit:
+                    // External cash → Cash Balance badh jata hai
                     balance.CashBalance += amount;
                     break;
+
                 case TransactionType.DepositToAccount:
+                    // External transfer → Bank Balance badh jata hai
                     balance.BankBalance += amount;
                     break;
+
                 case TransactionType.ConvertCashToAccount:
+                    // Cash → Account: Cash kam, Account zyada
                     if (balance.CashBalance < amount)
                         return (false, $"Insufficient cash balance. Available: PKR {balance.CashBalance:N2}");
                     balance.CashBalance -= amount;
                     balance.BankBalance += amount;
                     break;
+
                 case TransactionType.CashWithdraw:
+                    // Account → Cash: Bank kam, Cash zyada
                     if (balance.BankBalance < amount)
                         return (false, $"Insufficient account balance. Available: PKR {balance.BankBalance:N2}");
                     balance.BankBalance -= amount;
                     balance.CashBalance += amount;
                     break;
+
                 case TransactionType.WithdrawFromCash:
+                    // Spend from Cash: sirf Cash kam hota hai
                     if (balance.CashBalance < amount)
                         return (false, $"Insufficient cash balance. Available: PKR {balance.CashBalance:N2}");
                     balance.CashBalance -= amount;
+                    break;
+
+                case TransactionType.WithdrawFromAccount:
+                    // ✅ NEW — Spend from Account: sirf Bank Balance kam hota hai
+                    if (balance.BankBalance < amount)
+                        return (false, $"Insufficient account balance. Available: PKR {balance.BankBalance:N2}");
+                    balance.BankBalance -= amount;
                     break;
             }
 
@@ -97,7 +113,6 @@ namespace Ramza_EBike_Swabi.Services
 
         // ===========================
         // INVOICE PAYMENT — NEW INVOICE
-        // Records the full paid amount and stores invoice ref in remarks.
         // ===========================
         public async Task RecordInvoicePaymentAsync(
             decimal amount,
@@ -130,7 +145,7 @@ namespace Ramza_EBike_Swabi.Services
                 ByWhom = customerName,
                 Amount = amount,
                 TransactionDate = DateTime.Now,
-                Remarks = $"{invoiceRef} | Invoice payment ({(isCash ? "Cash" : "Account")})",
+                Remarks = $"{invoiceRef} | {customerName} | Invoice payment ({(isCash ? "Cash" : "Account")})",
                 CashBalanceAfter = balance.CashBalance,
                 BankBalanceAfter = balance.BankBalance
             });
@@ -139,11 +154,7 @@ namespace Ramza_EBike_Swabi.Services
         }
 
         // ===========================
-        // INVOICE PAYMENT EDIT — records only the DIFFERENCE
-        // oldPaid = what was already in the DB
-        // newPaid = what user entered now
-        // diff    = newPaid - oldPaid  (+ve = customer paid more, -ve = overpaid corrected)
-        // Only records a transaction if diff != 0.
+        // INVOICE PAYMENT EDIT
         // ===========================
         public async Task RecordInvoicePaymentEditAsync(
             decimal oldPaid,
@@ -153,8 +164,6 @@ namespace Ramza_EBike_Swabi.Services
             bool isCash)
         {
             decimal diff = newPaid - oldPaid;
-
-            // Nothing changed — no transaction needed
             if (diff == 0) return;
 
             using var db = new AppDbContext();
@@ -169,13 +178,11 @@ namespace Ramza_EBike_Swabi.Services
 
             if (diff > 0)
             {
-                // Customer paid MORE — add difference to balance
                 if (isCash) balance.CashBalance += diff;
                 else balance.BankBalance += diff;
             }
             else
             {
-                // Customer paid LESS (correction) — subtract difference
                 decimal absDiff = Math.Abs(diff);
                 if (isCash)
                 {
@@ -193,13 +200,14 @@ namespace Ramza_EBike_Swabi.Services
 
             db.AccountTransactions.Add(new AccountTransaction
             {
+                // ✅ Cash correction = WithdrawFromCash, Account correction = WithdrawFromAccount
                 Type = diff > 0
                     ? (isCash ? TransactionType.CashDeposit : TransactionType.DepositToAccount)
-                    : TransactionType.WithdrawFromCash,
+                    : (isCash ? TransactionType.WithdrawFromCash : TransactionType.WithdrawFromAccount),
                 ByWhom = customerName,
                 Amount = Math.Abs(diff),
                 TransactionDate = DateTime.Now,
-                Remarks = $"{invoiceRef} | {direction} ({(isCash ? "Cash" : "Account")}) | Was: PKR {oldPaid:N2} → Now: PKR {newPaid:N2}",
+                Remarks = $"{invoiceRef} | {customerName} | {direction} ({(isCash ? "Cash" : "Account")}) | Was: PKR {oldPaid:N2} → Now: PKR {newPaid:N2}",
                 CashBalanceAfter = balance.CashBalance,
                 BankBalanceAfter = balance.BankBalance
             });

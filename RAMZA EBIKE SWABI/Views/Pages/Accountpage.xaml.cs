@@ -30,6 +30,7 @@ namespace Ramza_EBike_Swabi.Views.Pages
                 TransactionType.CashWithdraw => "Withdrawn from Account to Cash",
                 TransactionType.ConvertCashToAccount => "Cash Converted to Account",
                 TransactionType.WithdrawFromCash => "Withdrawn / Spent from Cash",
+                TransactionType.WithdrawFromAccount => "Withdrawn / Spent from Account",  // ✅ NEW
                 _ => t.Type.ToString()
             },
             ByWhom = t.ByWhom,
@@ -66,7 +67,8 @@ namespace Ramza_EBike_Swabi.Views.Pages
             TotalWholesaleCost = p.TotalWholesaleCost,
             Discount = p.Discount,
             Profit = p.Profit,
-            Remarks = p.Remarks
+            Remarks = $"INV-{p.CustomerInvoiceId:D4} | {p.CustomerName}" +
+                      (string.IsNullOrWhiteSpace(p.Remarks) ? "" : $" — {p.Remarks}")
         };
     }
 
@@ -128,28 +130,41 @@ namespace Ramza_EBike_Swabi.Views.Pages
                 txtCashBalance.Text = $"PKR {balance.CashBalance:N2}";
                 txtAccountBalance.Text = $"PKR {balance.BankBalance:N2}";
                 txtVendorCash.Text = $"PKR {vendorCash:N2}";
-                // Total = Cash + Account + VendorCash
                 txtTotalBalance.Text = $"PKR {balance.CashBalance + balance.BankBalance + vendorCash:N2}";
 
                 decimal totalProfit = await _profitService.GetTotalProfitAsync();
                 txtTotalProfit.Text = $"PKR {totalProfit:N2}";
 
-                // Transactions
                 var txns = await _accountService.GetRecentTransactionsAsync(10);
-                dgTransactions.ItemsSource = txns.Select(TransactionDisplayRow.From).ToList();
-                txnCountHint.Text = "Showing recent 10 transactions";
+                var allRows = txns.Select(TransactionDisplayRow.From).ToList();
+                dgTransactions.ItemsSource = allRows;
 
-                // Profit
+                // ✅ Cash Transactions
+                var cashTxns = allRows.Where(t =>
+                    t.TypeDisplay.Contains("Cash Deposited") ||
+                    t.TypeDisplay.Contains("Withdrawn from Account to Cash") ||
+                    t.TypeDisplay.Contains("Cash Converted to Account") ||
+                    t.TypeDisplay.Contains("Withdrawn / Spent from Cash")).ToList();
+                dgCashTransactions.ItemsSource = cashTxns;
+
+                // ✅ Account Transactions — WithdrawFromAccount bhi include
+                var accountTxns = allRows.Where(t =>
+                    t.TypeDisplay.Contains("Deposited to Account") ||
+                    t.TypeDisplay.Contains("Withdrawn / Spent from Account") ||
+                    t.TypeDisplay.Contains("Withdrawn from Account to Cash") ||
+                    t.TypeDisplay.Contains("Cash Converted to Account")).ToList();
+                dgAccountTransactions.ItemsSource = accountTxns;
+
+                txnCountHint.Text = $"Showing recent 10 transactions (Cash: {cashTxns.Count}, Account: {accountTxns.Count})";
+
                 var profits = await _profitService.GetRecentProfitRecordsAsync(10);
                 dgProfit.ItemsSource = profits.Select(ProfitDisplayRow.From).ToList();
                 txtFilteredProfit.Text = $"PKR {profits.Sum(p => p.Profit):N2}";
 
-                // Vendor cash
                 var ledger = await _vendorCashService.GetRecentLedgerAsync(20);
                 dgVendorCash.ItemsSource = ledger.Select(VendorCashDisplayRow.From).ToList();
                 txtVendorCashTotal.Text = $"PKR {vendorCash:N2}";
 
-                // Per-vendor balance summary
                 var perVendor = await _vendorCashService.GetAllVendorCashBalancesAsync();
                 txtVendorBalanceSummary.Text = perVendor.Count > 0
                     ? string.Join("  |  ", perVendor.Select(v => $"{v.VendorName}: PKR {v.Balance:N2}"))
@@ -171,8 +186,26 @@ namespace Ramza_EBike_Swabi.Views.Pages
             if (from > to) { MessageBox.Show("From date cannot be later than To date."); return; }
 
             var txns = await _accountService.GetTransactionsByDateRangeAsync(from, to);
-            dgTransactions.ItemsSource = txns.Select(TransactionDisplayRow.From).ToList();
-            txnCountHint.Text = $"{txns.Count} transaction(s) found";
+            var allRows = txns.Select(TransactionDisplayRow.From).ToList();
+            dgTransactions.ItemsSource = allRows;
+
+            // ✅ Cash filter
+            var cashTxns = allRows.Where(t =>
+                t.TypeDisplay.Contains("Cash Deposited") ||
+                t.TypeDisplay.Contains("Withdrawn from Account to Cash") ||
+                t.TypeDisplay.Contains("Cash Converted to Account") ||
+                t.TypeDisplay.Contains("Withdrawn / Spent from Cash")).ToList();
+            dgCashTransactions.ItemsSource = cashTxns;
+
+            // ✅ Account filter — WithdrawFromAccount bhi include
+            var accountTxns = allRows.Where(t =>
+                t.TypeDisplay.Contains("Deposited to Account") ||
+                t.TypeDisplay.Contains("Withdrawn / Spent from Account") ||
+                t.TypeDisplay.Contains("Withdrawn from Account to Cash") ||
+                t.TypeDisplay.Contains("Cash Converted to Account")).ToList();
+            dgAccountTransactions.ItemsSource = accountTxns;
+
+            txnCountHint.Text = $"{allRows.Count} transaction(s) found (Cash: {cashTxns.Count}, Account: {accountTxns.Count})";
 
             var profits = await _profitService.GetProfitByDateRangeAsync(from, to);
             dgProfit.ItemsSource = profits.Select(ProfitDisplayRow.From).ToList();
@@ -197,6 +230,8 @@ namespace Ramza_EBike_Swabi.Views.Pages
             if (confirm != MessageBoxResult.Yes) return;
             await _accountService.ClearTransactionHistoryAsync();
             dgTransactions.ItemsSource = null;
+            dgCashTransactions.ItemsSource = null;
+            dgAccountTransactions.ItemsSource = null;
             txnCountHint.Text = "Transaction history cleared.";
         }
 

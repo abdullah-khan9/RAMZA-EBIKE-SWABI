@@ -28,7 +28,7 @@
                     Click="Back_Click"/>
 
             <TextBlock Grid.Column="1"
-                       Text="Bikees"
+                       Text="Bikes"
                        FontSize="26" FontWeight="Bold"
                        HorizontalAlignment="Center"
                        VerticalAlignment="Center"/>
