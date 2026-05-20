@@ -1,0 +1,354 @@
+﻿<Page x:Class="Ramza_EBike_Swabi.Views.Pages.ZakatPage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      Background="#F4F5F7">
+
+    <Page.Resources>
+        <Style x:Key="Card" TargetType="Border">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="CornerRadius" Value="10"/>
+            <Setter Property="BorderBrush" Value="#E8E8E8"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="16 14"/>
+            <Setter Property="Margin" Value="0 0 0 10"/>
+        </Style>
+        <Style x:Key="SectionTitle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="#6B7280"/>
+            <Setter Property="Margin" Value="0 0 0 10"/>
+        </Style>
+        <Style x:Key="FieldLabel" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Foreground" Value="#6B7280"/>
+            <Setter Property="Margin" Value="0 0 0 3"/>
+        </Style>
+        <Style x:Key="ActionBtn" TargetType="Button">
+            <Setter Property="Height" Value="34"/>
+            <Setter Property="Padding" Value="14 0"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" CornerRadius="7">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Page.Resources>
+
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="260"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- LEFT PANEL -->
+        <Border Grid.Column="0" Background="White"
+                BorderBrush="#E8E8E8" BorderThickness="0 0 1 0">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <StackPanel Grid.Row="0" Margin="12 14 12 10">
+                    <Button Content="Back" Style="{StaticResource ActionBtn}"
+                            Background="#2B579A" HorizontalAlignment="Left"
+                            Width="90" Click="Back_Click"/>
+                    <TextBlock Text="Zakat Records" FontSize="18" FontWeight="Bold"
+                               Foreground="#111827" Margin="0 12 0 8"/>
+                    <Button Content="+ New Zakat Year" Style="{StaticResource ActionBtn}"
+                            Background="#534AB7" HorizontalAlignment="Stretch"
+                            Click="NewRecord_Click"/>
+                </StackPanel>
+
+                <ListBox x:Name="RecordsList" Grid.Row="1"
+                         BorderThickness="0" Margin="8 0 8 8"
+                         SelectionChanged="RecordsList_SelectionChanged">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <Border Padding="10 8" CornerRadius="8" Margin="0 2">
+                                <StackPanel>
+                                    <TextBlock Text="{Binding ZakatYear}"
+                                               FontWeight="SemiBold" FontSize="14"
+                                               Foreground="#111827"/>
+                                    <TextBlock FontSize="11" Foreground="#6B7280" Margin="0 2 0 0">
+                                        <Run Text="Due: PKR "/>
+                                        <Run Text="{Binding TotalZakatDue, StringFormat=N0}"/>
+                                    </TextBlock>
+                                    <TextBlock FontSize="11" Foreground="#EF4444">
+                                        <Run Text="Remaining: PKR "/>
+                                        <Run Text="{Binding RemainingDue, StringFormat=N0}"/>
+                                    </TextBlock>
+                                </StackPanel>
+                            </Border>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </Grid>
+        </Border>
+
+        <!-- RIGHT PANEL -->
+        <ScrollViewer Grid.Column="1"
+                      VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility="Disabled">
+            <StackPanel Margin="20 18 20 30">
+
+                <!-- Placeholder -->
+                <Border x:Name="PlaceholderPanel" Style="{StaticResource Card}">
+                    <TextBlock Text="Select a Zakat year from the left, or click '+ New Zakat Year' to begin."
+                               Foreground="#9CA3AF" FontSize="14" TextWrapping="Wrap"
+                               HorizontalAlignment="Center" Padding="0 20"/>
+                </Border>
+
+                <!-- Detail Panel -->
+                <StackPanel x:Name="DetailPanel" Visibility="Collapsed">
+
+                    <!-- Header -->
+                    <StackPanel Orientation="Horizontal" Margin="0 0 0 14">
+                        <TextBlock x:Name="txtYearHeader"
+                                   FontSize="22" FontWeight="Bold" Foreground="#111827"
+                                   VerticalAlignment="Center"/>
+                        <Border x:Name="LockedBadge" Background="#E8F5E9"
+                                CornerRadius="6" Padding="10 3" Margin="12 0 0 0"
+                                VerticalAlignment="Center" Visibility="Collapsed">
+                            <TextBlock Text="LOCKED" FontSize="13" FontWeight="Bold"
+                                       Foreground="#2E7D32"/>
+                        </Border>
+                        <Border x:Name="UnlockedBadge" Background="#FEF3C7"
+                                CornerRadius="6" Padding="10 3" Margin="12 0 0 0"
+                                VerticalAlignment="Center">
+                            <TextBlock Text="In Progress" FontSize="13" FontWeight="Bold"
+                                       Foreground="#92400E"/>
+                        </Border>
+                    </StackPanel>
+
+                    <!-- CALCULATOR CARD -->
+                    <Border Style="{StaticResource Card}">
+                        <StackPanel>
+                            <TextBlock Style="{StaticResource SectionTitle}"
+                                       Text="ZAKAT CALCULATOR"/>
+
+                            <!-- Row 1 -->
+                            <Grid Margin="0 0 0 10">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0" Margin="0 0 8 0">
+                                    <TextBlock Style="{StaticResource FieldLabel}" Text="Cash on Hand (PKR)"/>
+                                    <TextBox x:Name="txtCash" Height="32" Padding="8 0"
+                                             VerticalContentAlignment="Center"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="1" Margin="0 0 8 0">
+                                    <TextBlock Style="{StaticResource FieldLabel}" Text="Bank / Account Balance (PKR)"/>
+                                    <TextBox x:Name="txtBank" Height="32" Padding="8 0"
+                                             VerticalContentAlignment="Center"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="2">
+                                    <TextBlock Style="{StaticResource FieldLabel}" Text="Vendor Cash Advance (PKR)"/>
+                                    <TextBox x:Name="txtVendorCash" Height="32" Padding="8 0"
+                                             VerticalContentAlignment="Center"/>
+                                </StackPanel>
+                            </Grid>
+
+                            <!-- Row 2 -->
+                            <Grid Margin="0 0 0 10">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0" Margin="0 0 8 0">
+                                    <TextBlock Style="{StaticResource FieldLabel}" Text="Inventory Worth (PKR)"/>
+                                    <TextBox x:Name="txtInventory" Height="32" Padding="8 0"
+                                             VerticalContentAlignment="Center"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="1" Margin="0 0 8 0">
+                                    <TextBlock Style="{StaticResource FieldLabel}" Text="Customer Receivables (PKR)"/>
+                                    <TextBox x:Name="txtReceivable" Height="32" Padding="8 0"
+                                             VerticalContentAlignment="Center"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="2">
+                                    <TextBlock Style="{StaticResource FieldLabel}" Text="Less: Vendor Dues (PKR)"/>
+                                    <TextBox x:Name="txtVendorDues" Height="32" Padding="8 0"
+                                             VerticalContentAlignment="Center"/>
+                                </StackPanel>
+                            </Grid>
+
+                            <!-- Row 3 -->
+                            <Grid Margin="0 0 0 14">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0" Margin="0 0 8 0">
+                                    <TextBlock Style="{StaticResource FieldLabel}" Text="Nisab Threshold (PKR)"/>
+                                    <TextBox x:Name="txtNisab" Height="32" Padding="8 0"
+                                             VerticalContentAlignment="Center"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="1" Margin="0 0 8 0">
+                                    <TextBlock Style="{StaticResource FieldLabel}">
+                                        <Run Text="Zakat Year Label"/>
+                                        <Run Text=" *" Foreground="Red"/>
+                                    </TextBlock>
+                                    <TextBox x:Name="txtZakatYear" Height="32" Padding="8 0"
+                                             VerticalContentAlignment="Center"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="2">
+                                    <TextBlock Style="{StaticResource FieldLabel}" Text="Remarks (optional)"/>
+                                    <TextBox x:Name="txtRemarks" Height="32" Padding="8 0"
+                                             VerticalContentAlignment="Center"/>
+                                </StackPanel>
+                            </Grid>
+
+                            <!-- Buttons -->
+                            <StackPanel Orientation="Horizontal">
+                                <Button Content="Calculate" Style="{StaticResource ActionBtn}"
+                                        Background="#534AB7" Width="120" Margin="0 0 8 0"
+                                        Click="Calculate_Click"/>
+                                <Button Content="Save" Style="{StaticResource ActionBtn}"
+                                        Background="#1D9E75" Width="100" Margin="0 0 8 0"
+                                        Click="SaveRecord_Click"/>
+                                <Button Content="Auto-Fill from Live Data"
+                                        Style="{StaticResource ActionBtn}"
+                                        Background="#2B579A"
+                                        Click="AutoFill_Click"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- RESULT CARD -->
+                    <Border x:Name="ResultCard" Style="{StaticResource Card}"
+                            Visibility="Collapsed">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0" Margin="0 0 12 0">
+                                <TextBlock Text="Net Zakatable Wealth" FontSize="11" Foreground="#6B7280"/>
+                                <TextBlock x:Name="txtResultNet" FontSize="20" FontWeight="Bold"
+                                           Foreground="#374151"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="1" Margin="0 0 12 0">
+                                <TextBlock Text="Zakat Applicable?" FontSize="11" Foreground="#6B7280"/>
+                                <TextBlock x:Name="txtResultApplicable" FontSize="20" FontWeight="Bold"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="2" Margin="0 0 12 0">
+                                <TextBlock Text="Total Zakat Due (2.5%)" FontSize="11" Foreground="#6B7280"/>
+                                <TextBlock x:Name="txtResultDue" FontSize="20" FontWeight="Bold"
+                                           Foreground="#3C3489"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="3">
+                                <TextBlock Text="Still Remaining" FontSize="11" Foreground="#6B7280"/>
+                                <TextBlock x:Name="txtResultRemaining" FontSize="20" FontWeight="Bold"
+                                           Foreground="#B00020"/>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
+                    <!-- PAYMENTS CARD -->
+                    <Border Style="{StaticResource Card}">
+                        <StackPanel>
+                            <StackPanel Orientation="Horizontal" Margin="0 0 0 10">
+                                <TextBlock Style="{StaticResource SectionTitle}"
+                                           Text="PAYMENT HISTORY"
+                                           VerticalAlignment="Center" Margin="0"/>
+                                <Button x:Name="btnPayZakat"
+                                        Content="+ Pay Zakat" Style="{StaticResource ActionBtn}"
+                                        Background="#D85A30" Margin="12 0 0 0"
+                                        Click="PayZakat_Click"/>
+                            </StackPanel>
+
+                            <DataGrid x:Name="PaymentsGrid"
+                                      AutoGenerateColumns="False"
+                                      IsReadOnly="True"
+                                      CanUserAddRows="False"
+                                      HeadersVisibility="Column"
+                                      AlternatingRowBackground="#F9F9F9"
+                                      RowHeight="36"
+                                      MaxHeight="240">
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Header="Date"
+                                        Binding="{Binding PaymentDate, StringFormat={}{0:dd-MMM-yyyy}}"
+                                        Width="100"/>
+                                    <DataGridTextColumn Header="Recipient"
+                                        Binding="{Binding RecipientName}" Width="140"/>
+                                    <DataGridTextColumn Header="Amount (PKR)"
+                                        Binding="{Binding Amount, StringFormat=N2}" Width="120"/>
+                                    <DataGridTextColumn Header="Paid By"
+                                        Binding="{Binding PaidByName}" Width="120"/>
+                                    <DataGridTextColumn Header="Source"
+                                        Binding="{Binding PaymentSource}" Width="80"/>
+                                    <DataGridTextColumn Header="Remarks"
+                                        Binding="{Binding Remarks}" Width="*"/>
+                                    <DataGridTemplateColumn Header="Action" Width="80">
+                                        <DataGridTemplateColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <Button Content="Delete" Width="66" Height="26"
+                                                        Background="#DC3545" Foreground="White"
+                                                        BorderThickness="0"
+                                                        Click="DeletePayment_Click"/>
+                                            </DataTemplate>
+                                        </DataGridTemplateColumn.CellTemplate>
+                                    </DataGridTemplateColumn>
+                                </DataGrid.Columns>
+                            </DataGrid>
+
+                            <Border Background="#F0F4FF" CornerRadius="8"
+                                    Padding="12 8" Margin="0 10 0 0">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="Total Paid:" FontWeight="Bold" FontSize="13"
+                                               VerticalAlignment="Center" Margin="0 0 8 0"/>
+                                    <TextBlock x:Name="txtTotalPaid" FontSize="16" FontWeight="Bold"
+                                               Foreground="#0F6E56" VerticalAlignment="Center"
+                                               Margin="0 0 30 0"/>
+                                    <TextBlock Text="Remaining:" FontWeight="Bold" FontSize="13"
+                                               VerticalAlignment="Center" Margin="0 0 8 0"/>
+                                    <TextBlock x:Name="txtTotalRemaining" FontSize="16" FontWeight="Bold"
+                                               Foreground="#B00020" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- LOCK + EXPORT CARD -->
+                    <Border Style="{StaticResource Card}">
+                        <StackPanel>
+                            <TextBlock Style="{StaticResource SectionTitle}" Text="FINALIZE ZAKAT YEAR"/>
+                            <TextBlock FontSize="12" Foreground="#6B7280" TextWrapping="Wrap"
+                                       Margin="0 0 0 12">
+                                Once all payments are made, lock this year to prevent further changes.
+                                Then export a complete Excel report.
+                            </TextBlock>
+                            <StackPanel Orientation="Horizontal">
+                                <Button x:Name="btnLock" Content="Lock This Year"
+                                        Style="{StaticResource ActionBtn}"
+                                        Background="#1D9E75" Width="160" Margin="0 0 10 0"
+                                        Click="LockYear_Click"/>
+                                <Button Content="Export to Excel"
+                                        Style="{StaticResource ActionBtn}"
+                                        Background="#2B579A" Width="160"
+                                        Click="Export_Click"/>
+                            </StackPanel>
+                            <TextBlock x:Name="txtLockInfo" FontSize="11" Foreground="#6B7280"
+                                       Margin="0 8 0 0"/>
+                        </StackPanel>
+                    </Border>
+
+                </StackPanel>
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</Page>

@@ -1,0 +1,484 @@
+﻿<!-- TrackingPage.xaml -->
+<Page x:Class="Ramza_EBike_Swabi.Views.Pages.TrackingPage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      Background="#F4F6F9"
+      Title="Document Tracking">
+
+    <Page.Resources>
+        <Style x:Key="ActionBtn" TargetType="Button">
+            <Setter Property="Height" Value="30"/>
+            <Setter Property="Padding" Value="12 0"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="bd" Background="{TemplateBinding Background}"
+                                CornerRadius="5" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="bd" Property="Opacity" Value="0.82"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Page.Resources>
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <Grid Margin="20">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <!-- ══ HEADER ══ -->
+            <Grid Grid.Row="0" Margin="0 0 0 15" VerticalAlignment="Center">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <Button Grid.Column="0"
+                        Content="Back"
+                        Width="100" Height="35"
+                        FontWeight="Bold"
+                        Background="#FF2B579A" Foreground="White"
+                        BorderThickness="0" Cursor="Hand"
+                        Click="BtnBack_Click">
+                    <Button.Template>
+                        <ControlTemplate TargetType="Button">
+                            <Border Background="{TemplateBinding Background}"
+                                    CornerRadius="6"
+                                    Padding="{TemplateBinding Padding}">
+                                <ContentPresenter HorizontalAlignment="Center"
+                                                  VerticalAlignment="Center"/>
+                            </Border>
+                        </ControlTemplate>
+                    </Button.Template>
+                </Button>
+
+                <TextBlock Grid.Column="1"
+                           Text="Document Tracking"
+                           FontSize="26" FontWeight="Bold"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Center"/>
+
+                <!-- Search controls on the right -->
+                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                    <ComboBox x:Name="cmbSearchType" Width="130" Height="35"
+                              SelectedIndex="0" Margin="0 0 8 0"
+                              VerticalContentAlignment="Center">
+                        <ComboBoxItem Content="Name"/>
+                        <ComboBoxItem Content="CNIC"/>
+                        <ComboBoxItem Content="Motor Number"/>
+                    </ComboBox>
+                    <TextBox x:Name="txtSearch" Width="240" Height="35"
+                             VerticalContentAlignment="Center" Padding="10 0" FontSize="13"
+                             KeyDown="TxtSearch_KeyDown"
+                             TextChanged="TxtSearch_TextChanged"/>
+                    <Button Content="Search" Width="100" Height="35"
+                            Background="#2B579A" Foreground="White"
+                            BorderThickness="0" FontWeight="Bold" Margin="8 0 0 0"
+                            Cursor="Hand" Click="BtnSearch_Click">
+                        <Button.Template>
+                            <ControlTemplate TargetType="Button">
+                                <Border Background="{TemplateBinding Background}"
+                                        CornerRadius="6"
+                                        Padding="{TemplateBinding Padding}">
+                                    <ContentPresenter HorizontalAlignment="Center"
+                                                      VerticalAlignment="Center"/>
+                                </Border>
+                            </ControlTemplate>
+                        </Button.Template>
+                    </Button>
+                    <Button Content="Clear" Width="70" Height="35"
+                            Background="#6B7280" Foreground="White"
+                            BorderThickness="0" Margin="6 0 0 0"
+                            Cursor="Hand" Click="BtnClear_Click">
+                        <Button.Template>
+                            <ControlTemplate TargetType="Button">
+                                <Border Background="{TemplateBinding Background}"
+                                        CornerRadius="6"
+                                        Padding="{TemplateBinding Padding}">
+                                    <ContentPresenter HorizontalAlignment="Center"
+                                                      VerticalAlignment="Center"/>
+                                </Border>
+                            </ControlTemplate>
+                        </Button.Template>
+                    </Button>
+                </StackPanel>
+            </Grid>
+
+            <!-- ══ FILTERS ══ -->
+            <Border Grid.Row="1" Background="White" CornerRadius="10"
+                    Padding="16 12" Margin="0 0 0 14">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0" Orientation="Horizontal">
+                        <TextBlock Text="Filter:" FontWeight="SemiBold"
+                                   VerticalAlignment="Center" Margin="0 0 12 0"/>
+                        <CheckBox x:Name="chkFilterWarranty" Content="Warranty Card"
+                                  Margin="0 0 16 0" VerticalAlignment="Center"
+                                  Checked="FilterChanged" Unchecked="FilterChanged"/>
+                        <CheckBox x:Name="chkFilterVoucherCust" Content="Voucher (Customer)"
+                                  Margin="0 0 16 0" VerticalAlignment="Center"
+                                  Checked="FilterChanged" Unchecked="FilterChanged"/>
+                        <CheckBox x:Name="chkFilterVoucherComp" Content="Voucher (Company)"
+                                  Margin="0 0 16 0" VerticalAlignment="Center"
+                                  Checked="FilterChanged" Unchecked="FilterChanged"/>
+                        <CheckBox x:Name="chkFilterHasDue" Content="Has Remaining Balance"
+                                  VerticalAlignment="Center"
+                                  Checked="FilterChanged" Unchecked="FilterChanged"/>
+                    </StackPanel>
+                    <TextBlock x:Name="txtResultCount" Grid.Column="1"
+                               FontSize="12" Foreground="#6B7280" VerticalAlignment="Center"/>
+                </Grid>
+            </Border>
+
+            <!-- ══ RESULTS ══ -->
+            <StackPanel Grid.Row="2">
+
+                <!-- Initial empty state -->
+                <Border x:Name="pnlEmpty" Background="White" CornerRadius="10" Padding="40">
+                    <TextBlock Text="Search for a customer to view tracking details."
+                               FontSize="14" Foreground="#9CA3AF" HorizontalAlignment="Center"/>
+                </Border>
+
+                <!-- Result cards -->
+                <ItemsControl x:Name="icResults" Visibility="Collapsed">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border Background="White" CornerRadius="10" Margin="0 0 0 16">
+                                <Border.Effect>
+                                    <DropShadowEffect BlurRadius="10" ShadowDepth="1" Opacity="0.10"/>
+                                </Border.Effect>
+                                <StackPanel>
+
+                                    <!-- ── Card Header ── -->
+                                    <Border Background="#F8FAFF" CornerRadius="10 10 0 0" Padding="18 14">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+
+                                            <StackPanel Grid.Column="0">
+                                                <TextBlock Text="{Binding CustomerName}"
+                                                           FontSize="17" FontWeight="Bold" Foreground="#111827"/>
+                                                <StackPanel Orientation="Horizontal" Margin="0 3 0 0">
+                                                    <TextBlock Text="INV-" Foreground="#6B7280" FontSize="12"/>
+                                                    <TextBlock Text="{Binding InvoiceId, StringFormat=D4}"
+                                                               Foreground="#6B7280" FontSize="12"/>
+                                                    <TextBlock Text="   |   " Foreground="#D1D5DB" FontSize="12"/>
+                                                    <TextBlock Text="{Binding InvoiceDate, StringFormat='dd MMM yyyy'}"
+                                                               Foreground="#6B7280" FontSize="12"/>
+                                                    <TextBlock Text="   |   " Foreground="#D1D5DB" FontSize="12"/>
+                                                    <TextBlock Text="{Binding Status}"
+                                                               Foreground="{Binding StatusColor}"
+                                                               FontSize="12" FontWeight="SemiBold"/>
+                                                </StackPanel>
+                                            </StackPanel>
+
+                                            <!-- Action Buttons -->
+                                            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                                <!-- Issue — hidden when all delivered -->
+                                                <Button Content="Issue Document"
+                                                        Style="{StaticResource ActionBtn}"
+                                                        Background="#0D6EFD"
+                                                        Margin="0 0 8 0"
+                                                        Visibility="{Binding IssueButtonVisibility}"
+                                                        Tag="{Binding}"
+                                                        Click="BtnIssue_Click"/>
+                                                <Button Content="Download PDF"
+                                                        Style="{StaticResource ActionBtn}"
+                                                        Background="#28A745"
+                                                        Margin="0 0 8 0"
+                                                        Tag="{Binding}"
+                                                        Click="BtnDownloadPdf_Click"/>
+                                                <Button Content="Delete History"
+                                                        Style="{StaticResource ActionBtn}"
+                                                        Background="#DC3545"
+                                                        Tag="{Binding}"
+                                                        Click="BtnDeleteRecord_Click"/>
+                                            </StackPanel>
+                                        </Grid>
+                                    </Border>
+
+                                    <!-- ── All Delivered Banner ── -->
+                                    <Border Background="#D1FAE5" Padding="16 10"
+                                            Visibility="{Binding AllDeliveredVisibility}">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="✅" FontSize="16" Margin="0 0 8 0" VerticalAlignment="Center"/>
+                                            <TextBlock Text="All documents have been delivered to the customer."
+                                                       FontWeight="SemiBold" Foreground="#065F46"
+                                                       VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Border>
+
+                                    <!-- ── Main Details Grid ── -->
+                                    <Grid Margin="18 16 18 16">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <!-- Customer Info -->
+                                        <StackPanel Grid.Column="0" Margin="0 0 16 0">
+                                            <Border Background="#F1F5F9" CornerRadius="4"
+                                                    Padding="8 4" Margin="0 0 0 10">
+                                                <TextBlock Text="CUSTOMER DETAILS"
+                                                           FontSize="10" FontWeight="Bold" Foreground="#64748B"/>
+                                            </Border>
+                                            <Grid Margin="0 0 0 5">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="95"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock Text="Father Name" Foreground="#6B7280" FontSize="12"/>
+                                                <TextBlock Grid.Column="1" Text="{Binding FatherName}"
+                                                           FontSize="12" FontWeight="SemiBold"/>
+                                            </Grid>
+                                            <Grid Margin="0 0 0 5">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="95"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock Text="Contact" Foreground="#6B7280" FontSize="12"/>
+                                                <TextBlock Grid.Column="1" Text="{Binding Contact}"
+                                                           FontSize="12" FontWeight="SemiBold"/>
+                                            </Grid>
+                                            <Grid Margin="0 0 0 5">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="95"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock Text="CNIC" Foreground="#6B7280" FontSize="12"/>
+                                                <TextBlock Grid.Column="1" Text="{Binding CNIC}"
+                                                           FontSize="12" FontWeight="SemiBold"/>
+                                            </Grid>
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="95"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock Text="Address" Foreground="#6B7280" FontSize="12"/>
+                                                <TextBlock Grid.Column="1" Text="{Binding Address}"
+                                                           FontSize="12" FontWeight="SemiBold" TextWrapping="Wrap"/>
+                                            </Grid>
+                                            <Border Background="#FFF3CD" CornerRadius="6" Padding="8 5"
+                                                    Margin="0 10 0 0"
+                                                    Visibility="{Binding DueDateVisibility}">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <TextBlock Text="Due Date: " FontWeight="SemiBold" FontSize="12"/>
+                                                    <TextBlock Text="{Binding DueDateText}" FontSize="12"/>
+                                                </StackPanel>
+                                            </Border>
+                                        </StackPanel>
+
+                                        <!-- Bike Details -->
+                                        <StackPanel Grid.Column="1" Margin="0 0 16 0">
+                                            <Border Background="#F1F5F9" CornerRadius="4"
+                                                    Padding="8 4" Margin="0 0 0 10">
+                                                <TextBlock Text="BIKE DETAILS"
+                                                           FontSize="10" FontWeight="Bold" Foreground="#64748B"/>
+                                            </Border>
+                                            <ItemsControl ItemsSource="{Binding BikesSummary}">
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <Border Background="#F9FAFB" CornerRadius="6"
+                                                                Padding="8 7" Margin="0 0 0 5">
+                                                            <StackPanel>
+                                                                <TextBlock Text="{Binding ModelBrand}"
+                                                                           FontWeight="SemiBold" FontSize="12"/>
+                                                                <TextBlock Text="{Binding MotorChassis}"
+                                                                           FontSize="11" Foreground="#6B7280" Margin="0 2 0 0"/>
+                                                                <TextBlock Text="{Binding ColorPower}"
+                                                                           FontSize="11" Foreground="#6B7280"/>
+                                                            </StackPanel>
+                                                        </Border>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                        </StackPanel>
+
+                                        <!-- Document Status -->
+                                        <StackPanel Grid.Column="2">
+                                            <Border Background="#F1F5F9" CornerRadius="4"
+                                                    Padding="8 4" Margin="0 0 0 10">
+                                                <TextBlock Text="DOCUMENT STATUS"
+                                                           FontSize="10" FontWeight="Bold" Foreground="#64748B"/>
+                                            </Border>
+
+                                            <!-- Warranty Card -->
+                                            <Border CornerRadius="8" Padding="12 9" Margin="0 0 0 7"
+                                                    Background="{Binding WarrantyBg}">
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <StackPanel>
+                                                        <TextBlock Text="Warranty Card"
+                                                                   FontWeight="SemiBold" FontSize="13"/>
+                                                        <TextBlock Text="{Binding WarrantyStatus}"
+                                                                   FontSize="11" Foreground="{Binding WarrantyFg}"
+                                                                   Margin="0 2 0 0"/>
+                                                    </StackPanel>
+                                                    <TextBlock Grid.Column="1" Text="{Binding WarrantyIcon}"
+                                                               FontSize="20" VerticalAlignment="Center"/>
+                                                </Grid>
+                                            </Border>
+
+                                            <!-- Voucher Customer -->
+                                            <Border CornerRadius="8" Padding="12 9" Margin="0 0 0 7"
+                                                    Background="{Binding VoucherCustBg}">
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <StackPanel>
+                                                        <TextBlock Text="Voucher (Customer)"
+                                                                   FontWeight="SemiBold" FontSize="13"/>
+                                                        <TextBlock Text="{Binding VoucherCustStatus}"
+                                                                   FontSize="11" Foreground="{Binding VoucherCustFg}"
+                                                                   Margin="0 2 0 0"/>
+                                                    </StackPanel>
+                                                    <TextBlock Grid.Column="1" Text="{Binding VoucherCustIcon}"
+                                                               FontSize="20" VerticalAlignment="Center"/>
+                                                </Grid>
+                                            </Border>
+
+                                            <!-- Voucher Company -->
+                                            <Border CornerRadius="8" Padding="12 9"
+                                                    Background="{Binding VoucherCompBg}">
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <StackPanel>
+                                                        <TextBlock Text="Voucher (Company)"
+                                                                   FontWeight="SemiBold" FontSize="13"/>
+                                                        <TextBlock Text="{Binding VoucherCompStatus}"
+                                                                   FontSize="11" Foreground="{Binding VoucherCompFg}"
+                                                                   Margin="0 2 0 0"/>
+                                                    </StackPanel>
+                                                    <TextBlock Grid.Column="1" Text="{Binding VoucherCompIcon}"
+                                                               FontSize="20" VerticalAlignment="Center"/>
+                                                </Grid>
+                                            </Border>
+                                        </StackPanel>
+                                    </Grid>
+
+                                    <!-- ── Inline History Table ── -->
+                                    <Border Visibility="{Binding HistoryVisibility}"
+                                            Background="#F8FAFC" CornerRadius="0 0 10 10"
+                                            Padding="18 14">
+                                        <StackPanel>
+                                            <TextBlock Text="ISSUANCE HISTORY"
+                                                       FontSize="10" FontWeight="Bold"
+                                                       Foreground="#64748B" Margin="0 0 0 10"/>
+                                            <ItemsControl ItemsSource="{Binding HistoryRows}">
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <Border CornerRadius="6" Margin="0 0 0 6"
+                                                                Background="{Binding RowBg}"
+                                                                Padding="12 8">
+                                                            <Grid>
+                                                                <Grid.ColumnDefinitions>
+                                                                    <ColumnDefinition Width="150"/>
+                                                                    <ColumnDefinition Width="Auto"/>
+                                                                    <ColumnDefinition Width="*"/>
+                                                                    <ColumnDefinition Width="130"/>
+                                                                    <ColumnDefinition Width="130"/>
+                                                                    <ColumnDefinition Width="Auto"/>
+                                                                </Grid.ColumnDefinitions>
+                                                                <TextBlock Grid.Column="0"
+                                                                           Text="{Binding DateDisplay}"
+                                                                           FontSize="11" Foreground="#374151"
+                                                                           VerticalAlignment="Center"/>
+                                                                <Border Grid.Column="1"
+                                                                        Background="{Binding LabelBg}"
+                                                                        CornerRadius="4" Padding="6 2" Margin="8 0">
+                                                                    <TextBlock Text="{Binding RowLabel}"
+                                                                               FontSize="10" FontWeight="Bold"
+                                                                               Foreground="{Binding LabelFg}"/>
+                                                                </Border>
+                                                                <TextBlock Grid.Column="2"
+                                                                           Text="{Binding DocumentsIssued}"
+                                                                           FontSize="12" FontWeight="SemiBold"
+                                                                           Foreground="#111827"
+                                                                           VerticalAlignment="Center"
+                                                                           TextWrapping="Wrap"/>
+                                                                <StackPanel Grid.Column="3" Margin="8 0">
+                                                                    <TextBlock Text="Issued by" FontSize="10" Foreground="#9CA3AF"/>
+                                                                    <TextBlock Text="{Binding IssuedBy}"
+                                                                               FontSize="11" FontWeight="SemiBold" Foreground="#374151"/>
+                                                                </StackPanel>
+                                                                <StackPanel Grid.Column="4">
+                                                                    <TextBlock Text="Received by" FontSize="10" Foreground="#9CA3AF"/>
+                                                                    <TextBlock Text="{Binding ReceivedBy}"
+                                                                               FontSize="11" FontWeight="SemiBold" Foreground="#374151"/>
+                                                                </StackPanel>
+                                                                <!-- Edit button — hidden for billing entries -->
+                                                                <Button Grid.Column="5"
+                                                                        Content="Edit"
+                                                                        Visibility="{Binding EditButtonVisibility}"
+                                                                        Height="26" Padding="10 0"
+                                                                        Background="#6366F1" Foreground="White"
+                                                                        BorderThickness="0" FontSize="11"
+                                                                        FontWeight="SemiBold" Cursor="Hand"
+                                                                        Margin="10 0 0 0"
+                                                                        Tag="{Binding}"
+                                                                        Click="BtnEditHistory_Click"/>
+                                                            </Grid>
+                                                        </Border>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                        </StackPanel>
+                                    </Border>
+
+                                    <!-- Remarks -->
+                                    <Border Visibility="{Binding RemarksVisibility}"
+                                            Background="#FFFBEB" CornerRadius="0 0 10 10" Padding="18 10">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="Remarks: " FontWeight="SemiBold"
+                                                       FontSize="12" Foreground="#92400E"/>
+                                            <TextBlock Text="{Binding Remarks}"
+                                                       FontSize="12" Foreground="#78350F" TextWrapping="Wrap"/>
+                                        </StackPanel>
+                                    </Border>
+
+                                </StackPanel>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <!-- No results -->
+                <Border x:Name="pnlNoResults" Background="White" CornerRadius="10"
+                        Padding="40" Visibility="Collapsed">
+                    <TextBlock Text="No records found for your search."
+                               FontSize="14" Foreground="#9CA3AF" HorizontalAlignment="Center"/>
+                </Border>
+
+            </StackPanel>
+        </Grid>
+    </ScrollViewer>
+</Page>

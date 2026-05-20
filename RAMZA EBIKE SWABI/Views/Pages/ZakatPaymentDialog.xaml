@@ -1,0 +1,185 @@
+﻿<Window x:Class="Ramza_EBike_Swabi.Views.Pages.ZakatPaymentDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Record Zakat Payment"
+        Width="500"
+        SizeToContent="Height"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        Background="#F4F5F7">
+
+    <Window.Resources>
+        <Style x:Key="FieldLabel" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Foreground" Value="#6B7280"/>
+            <Setter Property="Margin" Value="0 0 0 4"/>
+        </Style>
+        <Style x:Key="InputBox" TargetType="TextBox">
+            <Setter Property="Height" Value="34"/>
+            <Setter Property="Padding" Value="10 0"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="BorderBrush" Value="#D1D5DB"/>
+            <Setter Property="BorderThickness" Value="1"/>
+        </Style>
+        <Style x:Key="PrimaryBtn" TargetType="Button">
+            <Setter Property="Height" Value="36"/>
+            <Setter Property="Padding" Value="20 0"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" CornerRadius="7">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <Border Background="White" CornerRadius="12" Margin="14"
+            BorderBrush="#E8E8E8" BorderThickness="1">
+        <StackPanel Margin="24 20 24 24">
+
+            <!-- Title row -->
+            <StackPanel Orientation="Horizontal" Margin="0 0 0 4">
+                <Border Width="4" CornerRadius="2" Background="#D85A30" Margin="0 0 10 0"/>
+                <TextBlock Text="Record Zakat Payment"
+                           FontSize="17" FontWeight="Bold" Foreground="#111827"/>
+            </StackPanel>
+
+            <!-- Voluntary banner (hidden by default, shown in voluntary mode) -->
+            <Border x:Name="VoluntaryBanner" Background="#FEF3C7"
+                    CornerRadius="6" Padding="10 6" Margin="0 8 0 0"
+                    Visibility="Collapsed">
+                <TextBlock
+                    Text="Voluntary / extra payment — will NOT be counted toward Zakat Due."
+                    FontSize="11" Foreground="#92400E" TextWrapping="Wrap"/>
+            </Border>
+
+            <!-- Summary strip -->
+            <Border Background="#F0F4FF" CornerRadius="8"
+                    Padding="12 8" Margin="0 14 0 16">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0">
+                        <TextBlock Text="Total Due" FontSize="10" Foreground="#6B7280"/>
+                        <TextBlock x:Name="lblTotalDue" FontSize="14" FontWeight="Bold"
+                                   Foreground="#374151"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="1">
+                        <TextBlock Text="Already Paid" FontSize="10" Foreground="#6B7280"/>
+                        <TextBlock x:Name="lblPaid" FontSize="14" FontWeight="Bold"
+                                   Foreground="#0F6E56"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="2">
+                        <TextBlock Text="Remaining" FontSize="10" Foreground="#6B7280"/>
+                        <TextBlock x:Name="lblRemaining" FontSize="14" FontWeight="Bold"
+                                   Foreground="#B00020"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- Divider -->
+            <Border Height="1" Background="#F3F4F6" Margin="0 0 0 14"/>
+
+            <!-- Recipient -->
+            <TextBlock Style="{StaticResource FieldLabel}">
+                Recipient Name <Run Text=" *" Foreground="Red"/>
+            </TextBlock>
+            <TextBox x:Name="txtRecipient" Style="{StaticResource InputBox}"
+                     Margin="0 0 0 12"/>
+
+            <!-- Amount + Date -->
+            <Grid Margin="0 0 0 12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="12"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0">
+                    <TextBlock Style="{StaticResource FieldLabel}">
+                        Amount (PKR) <Run Text=" *" Foreground="Red"/>
+                    </TextBlock>
+                    <TextBox x:Name="txtAmount" Style="{StaticResource InputBox}"/>
+                </StackPanel>
+
+                <StackPanel Grid.Column="2">
+                    <TextBlock Style="{StaticResource FieldLabel}">
+                        Payment Date <Run Text=" *" Foreground="Red"/>
+                    </TextBlock>
+                    <DatePicker x:Name="dpPaymentDate"
+                                Height="34" FontSize="13"
+                                BorderBrush="#D1D5DB" BorderThickness="1"
+                                SelectedDateFormat="Short"/>
+                </StackPanel>
+            </Grid>
+
+            <!-- Paid By + Source -->
+            <Grid Margin="0 0 0 12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="12"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0">
+                    <TextBlock Style="{StaticResource FieldLabel}">
+                        Paid By <Run Text=" *" Foreground="Red"/>
+                    </TextBlock>
+                    <TextBox x:Name="txtPaidBy" Style="{StaticResource InputBox}"/>
+                </StackPanel>
+
+                <StackPanel Grid.Column="2">
+                    <TextBlock Style="{StaticResource FieldLabel}">
+                        Payment Source <Run Text=" *" Foreground="Red"/>
+                    </TextBlock>
+                    <ComboBox x:Name="cmbSource"
+                              Height="34" FontSize="13"
+                              BorderBrush="#D1D5DB" BorderThickness="1">
+                        <ComboBoxItem Content="Cash" IsSelected="True"/>
+                        <ComboBoxItem Content="Account"/>
+                    </ComboBox>
+                </StackPanel>
+            </Grid>
+
+            <!-- Remarks -->
+            <TextBlock Style="{StaticResource FieldLabel}" Text="Remarks (optional)"/>
+            <TextBox x:Name="txtRemarks" Style="{StaticResource InputBox}"
+                     Margin="0 0 0 18"/>
+
+            <!-- Error banner -->
+            <Border x:Name="ErrorBanner" Background="#FEE2E2"
+                    CornerRadius="6" Padding="10 7"
+                    Margin="0 0 0 12" Visibility="Collapsed">
+                <TextBlock x:Name="txtError"
+                           FontSize="12" Foreground="#B91C1C"
+                           TextWrapping="Wrap"/>
+            </Border>
+
+            <!-- Action buttons -->
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Content="Cancel" Style="{StaticResource PrimaryBtn}"
+                        Background="#9CA3AF" Width="100" Margin="0 0 10 0"
+                        Click="Cancel_Click"/>
+                <Button x:Name="btnConfirm"
+                        Content="Confirm Payment"
+                        Style="{StaticResource PrimaryBtn}"
+                        Background="#D85A30" Width="170"
+                        Click="Confirm_Click"/>
+            </StackPanel>
+
+        </StackPanel>
+    </Border>
+</Window>

@@ -1,0 +1,157 @@
+﻿<Window x:Class="Ramza_EBike_Swabi.Views.Pages.PayDueWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Record Payment"
+        Width="420" Height="480"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        Background="#F5F6FA">
+
+    <Border Margin="20" Background="White" CornerRadius="10">
+
+        <!-- Shadow -->
+        <Border.Effect>
+            <DropShadowEffect 
+                Color="#000000"
+                BlurRadius="18"
+                ShadowDepth="3"
+                Opacity="0.2"/>
+        </Border.Effect>
+
+        <!-- ✅ Scroll Enabled -->
+        <ScrollViewer VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility="Disabled">
+
+            <StackPanel Margin="24">
+
+                <!-- Title -->
+                <TextBlock Text="Record Payment"
+                           FontSize="20" FontWeight="Bold"
+                           Foreground="#2C3E50"
+                           Margin="0 0 0 20"/>
+
+                <!-- Invoice Ref -->
+                <TextBlock x:Name="lblInvoiceRef"
+                           FontSize="13" Foreground="#555"
+                           Margin="0 0 0 16"/>
+
+                <!-- Info Grid -->
+                <Grid Margin="0 0 0 16">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <TextBlock Grid.Row="0" Grid.Column="0"
+                               Text="Net Bill" Foreground="#888" FontSize="12"/>
+                    <TextBlock x:Name="lblNetBill"
+                               Grid.Row="0" Grid.Column="1"
+                               FontWeight="SemiBold" FontSize="14"
+                               Foreground="#2C3E50"
+                               HorizontalAlignment="Right"/>
+
+                    <TextBlock Grid.Row="1" Grid.Column="0"
+                               Text="Already Paid" Foreground="#888"
+                               FontSize="12" Margin="0 6 0 0"/>
+                    <TextBlock x:Name="lblAlreadyPaid"
+                               Grid.Row="1" Grid.Column="1"
+                               FontWeight="SemiBold" FontSize="14"
+                               Foreground="#27AE60"
+                               HorizontalAlignment="Right"
+                               Margin="0 6 0 0"/>
+
+                    <TextBlock Grid.Row="2" Grid.Column="0"
+                               Text="Remaining" Foreground="#888"
+                               FontSize="12" Margin="0 6 0 0"/>
+                    <TextBlock x:Name="lblRemaining"
+                               Grid.Row="2" Grid.Column="1"
+                               FontWeight="Bold" FontSize="15"
+                               Foreground="#E74C3C"
+                               HorizontalAlignment="Right"
+                               Margin="0 6 0 0"/>
+                </Grid>
+
+                <Separator Margin="0 0 0 16"/>
+
+                <!-- Amount -->
+                <TextBlock Text="Amount to Pay (PKR) *"
+                           FontSize="13" Foreground="#555"
+                           Margin="0 0 0 4"/>
+                <TextBox x:Name="txtPayAmount"
+                         Height="36" Padding="8 0"
+                         VerticalContentAlignment="Center"
+                         FontSize="14" BorderBrush="#CCC"
+                         BorderThickness="1"
+                         TextChanged="TxtPayAmount_TextChanged"/>
+
+                <!-- New Remaining -->
+                <StackPanel Orientation="Horizontal" Margin="0 8 0 0">
+                    <TextBlock Text="New Remaining: "
+                               Foreground="#888" FontSize="13"/>
+                    <TextBlock x:Name="lblNewRemaining"
+                               FontWeight="Bold" FontSize="13"
+                               Foreground="#E67E22"/>
+                </StackPanel>
+
+                <!-- Payment Method -->
+                <TextBlock Text="Payment Method"
+                           FontSize="13" Foreground="#555"
+                           Margin="0 14 0 6"/>
+                <StackPanel Orientation="Horizontal">
+                    <RadioButton x:Name="rbCash" Content="Cash"
+                                 GroupName="PM" IsChecked="True"
+                                 FontSize="13" Margin="0 0 20 0"/>
+                    <RadioButton x:Name="rbBank"
+                                 Content="Bank Transfer"
+                                 GroupName="PM" FontSize="13"/>
+                </StackPanel>
+
+                <!-- Received By -->
+                <TextBlock Text="Received By *"
+                           FontSize="13" Foreground="#555"
+                           Margin="0 14 0 4"/>
+                <TextBox x:Name="txtReceivedBy"
+                         Height="36" Padding="8 0"
+                         VerticalContentAlignment="Center"
+                         FontSize="14"
+                         BorderBrush="#CCC"
+                         BorderThickness="1"/>
+
+                <!-- Date -->
+                <TextBlock Text="Date"
+                           FontSize="13" Foreground="#555"
+                           Margin="0 14 0 4"/>
+                <DatePicker x:Name="dpDate"
+                            Height="36" FontSize="14"/>
+
+                <!-- Buttons -->
+                <StackPanel Orientation="Horizontal"
+                            HorizontalAlignment="Right"
+                            Margin="0 20 0 0">
+
+                    <Button Content="Cancel"
+                            Width="90" Height="36"
+                            Background="#BDC3C7"
+                            Foreground="White"
+                            BorderThickness="0"
+                            Margin="0 0 10 0"
+                            Click="Cancel_Click"/>
+
+                    <Button Content="Confirm Payment"
+                            Width="140" Height="36"
+                            Background="#E67E22"
+                            Foreground="White"
+                            BorderThickness="0"
+                            Click="Confirm_Click"/>
+                </StackPanel>
+
+            </StackPanel>
+
+        </ScrollViewer>
+    </Border>
+</Window>

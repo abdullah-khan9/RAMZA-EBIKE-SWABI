@@ -1,0 +1,220 @@
+﻿<Page x:Class="Ramza_EBike_Swabi.Views.Pages.AccountPage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      Background="#F4F6F9">
+
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- TOP BAR -->
+        <Grid Grid.Row="0" Margin="0 0 0 20">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <Button Grid.Column="0" Content="Back" Width="100" Height="35"
+                    FontWeight="Bold" Background="#FF2B579A" Foreground="White"
+                    BorderThickness="0" Click="Back_Click"/>
+            <TextBlock Grid.Column="1" Text="Account" FontSize="26" FontWeight="Bold"
+                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            <Button Grid.Column="2" Content="Add / Convert" Width="140" Height="35"
+                    Background="#FF1B4079" Foreground="White"
+                    FontWeight="Bold" BorderThickness="0" Click="AddConvert_Click"/>
+        </Grid>
+
+        <!-- BALANCE CARDS — 5 cards -->
+        <UniformGrid Grid.Row="1" Columns="5" Margin="0 0 0 20">
+
+            <Border Background="#E8F5E9" CornerRadius="10" Padding="12" Margin="0 0 6 0">
+                <StackPanel HorizontalAlignment="Center">
+                    <TextBlock Text="Cash Balance" FontSize="12" FontWeight="Bold"
+                               Foreground="#2E7D32" HorizontalAlignment="Center"/>
+                    <TextBlock x:Name="txtCashBalance" FontSize="18" FontWeight="Bold"
+                               Foreground="#1B5E20" HorizontalAlignment="Center" Margin="0 4 0 0"/>
+                </StackPanel>
+            </Border>
+
+            <Border Background="#E3F2FD" CornerRadius="10" Padding="12" Margin="3 0">
+                <StackPanel HorizontalAlignment="Center">
+                    <TextBlock Text="Account Balance" FontSize="12" FontWeight="Bold"
+                               Foreground="#1565C0" HorizontalAlignment="Center"/>
+                    <TextBlock x:Name="txtAccountBalance" FontSize="18" FontWeight="Bold"
+                               Foreground="#0D47A1" HorizontalAlignment="Center" Margin="0 4 0 0"/>
+                </StackPanel>
+            </Border>
+
+            <!-- ✅ Vendor Cash card -->
+            <Border Background="#FFF8E1" CornerRadius="10" Padding="12" Margin="3 0">
+                <StackPanel HorizontalAlignment="Center">
+                    <TextBlock Text="Vendor Cash" FontSize="12" FontWeight="Bold"
+                               Foreground="#F57F17" HorizontalAlignment="Center"/>
+                    <TextBlock x:Name="txtVendorCash" FontSize="18" FontWeight="Bold"
+                               Foreground="#E65100" HorizontalAlignment="Center" Margin="0 4 0 0"/>
+                </StackPanel>
+            </Border>
+
+            <Border Background="#FFF3E0" CornerRadius="10" Padding="12" Margin="3 0">
+                <StackPanel HorizontalAlignment="Center">
+                    <TextBlock Text="Total Balance" FontSize="12" FontWeight="Bold"
+                               Foreground="#E65100" HorizontalAlignment="Center"/>
+                    <TextBlock x:Name="txtTotalBalance" FontSize="18" FontWeight="Bold"
+                               Foreground="#BF360C" HorizontalAlignment="Center" Margin="0 4 0 0"/>
+                </StackPanel>
+            </Border>
+
+            <Border Background="#F3E5F5" CornerRadius="10" Padding="12" Margin="6 0 0 0">
+                <StackPanel HorizontalAlignment="Center">
+                    <TextBlock Text="Total Profit" FontSize="12" FontWeight="Bold"
+                               Foreground="#6A1B9A" HorizontalAlignment="Center"/>
+                    <TextBlock x:Name="txtTotalProfit" FontSize="18" FontWeight="Bold"
+                               Foreground="#4A148C" HorizontalAlignment="Center" Margin="0 4 0 0"/>
+                </StackPanel>
+            </Border>
+
+        </UniformGrid>
+
+        <!-- DATE FILTER BAR -->
+        <Border Grid.Row="2" Background="White" CornerRadius="8"
+                Padding="12" Margin="0 0 0 12">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="From:" VerticalAlignment="Center" Margin="0 0 6 0"/>
+                    <DatePicker x:Name="dpFrom" Width="130" Height="30"/>
+                    <TextBlock Text="To:" VerticalAlignment="Center" Margin="12 0 6 0"/>
+                    <DatePicker x:Name="dpTo" Width="130" Height="30"/>
+                    <Button Content="Filter" Width="80" Height="30" Margin="8 0 0 0"
+                            Background="#FF2B579A" Foreground="White"
+                            BorderThickness="0" Click="Filter_Click"/>
+                    <Button Content="Reset" Width="70" Height="30" Margin="6 0 0 0"
+                            Background="#FF616161" Foreground="White"
+                            BorderThickness="0" Click="Reset_Click"/>
+                    <TextBlock x:Name="txnCountHint" VerticalAlignment="Center"
+                               Margin="14 0 0 0" FontStyle="Italic" Foreground="#666666"/>
+                </StackPanel>
+                <Button Grid.Column="1" Content="Clear History" Width="120" Height="30"
+                        Background="#FFC62828" Foreground="White"
+                        FontWeight="Bold" BorderThickness="0" Click="ClearHistory_Click"/>
+            </Grid>
+        </Border>
+
+        <!-- TAB CONTROL -->
+        <TabControl Grid.Row="3" Background="White">
+
+            <!-- Transaction History -->
+            <TabItem Header="Transaction History">
+                <DataGrid x:Name="dgTransactions" AutoGenerateColumns="False"
+                          IsReadOnly="True" CanUserAddRows="False"
+                          HeadersVisibility="Column"
+                          AlternatingRowBackground="#F9F9F9" RowHeight="36">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="#"            Binding="{Binding Id}"          Width="55"/>
+                        <DataGridTextColumn Header="Date"         Binding="{Binding TransactionDate, StringFormat={}{0:dd-MMM-yyyy hh:mm tt}}" Width="165"/>
+                        <DataGridTextColumn Header="Type"         Binding="{Binding TypeDisplay}"  Width="195"/>
+                        <DataGridTextColumn Header="By Whom"      Binding="{Binding ByWhom}"       Width="130"/>
+                        <DataGridTextColumn Header="Amount (PKR)" Binding="{Binding Amount, StringFormat=N2}"           Width="120"/>
+                        <DataGridTextColumn Header="Cash After"   Binding="{Binding CashBalanceAfter, StringFormat=N2}" Width="120"/>
+                        <DataGridTextColumn Header="Account After" Binding="{Binding BankBalanceAfter, StringFormat=N2}" Width="120"/>
+                        <DataGridTextColumn Header="Remarks"      Binding="{Binding Remarks}"      Width="*"/>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </TabItem>
+
+            <!-- Profit History -->
+            <TabItem Header="Profit History">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <Border Grid.Row="0" Background="#F3E5F5" Padding="12 8" Margin="0 0 0 4">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="Period Profit:" FontWeight="Bold" FontSize="14"
+                                       VerticalAlignment="Center" Margin="0 0 10 0"/>
+                            <TextBlock x:Name="txtFilteredProfit" FontSize="18" FontWeight="Bold"
+                                       Foreground="#4A148C" VerticalAlignment="Center"/>
+                            <Button Content="Clear Profit History" Width="160" Height="28"
+                                    Margin="30 0 0 0" Background="#FFC62828" Foreground="White"
+                                    FontWeight="Bold" BorderThickness="0"
+                                    Click="ClearProfitHistory_Click"/>
+                        </StackPanel>
+                    </Border>
+                    <DataGrid x:Name="dgProfit" Grid.Row="1"
+                              AutoGenerateColumns="False" IsReadOnly="True"
+                              CanUserAddRows="False" HeadersVisibility="Column"
+                              AlternatingRowBackground="#FDF6FF" RowHeight="36">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Invoice #"       Binding="{Binding InvoiceRef}"            Width="90"/>
+                            <DataGridTextColumn Header="Date"            Binding="{Binding SaleDate, StringFormat={}{0:dd-MMM-yyyy}}" Width="110"/>
+                            <DataGridTextColumn Header="Customer"        Binding="{Binding CustomerName}"           Width="120"/>
+                            <DataGridTextColumn Header="Bikes"           Binding="{Binding BikeCount}"              Width="50"/>
+                            <DataGridTextColumn Header="Models"          Binding="{Binding BikeModels}"             Width="160"/>
+                            <DataGridTextColumn Header="Sale Price (PKR)"    Binding="{Binding TotalSalePrice, StringFormat=N2}"     Width="120"/>
+                            <DataGridTextColumn Header="Wholesale (PKR)"     Binding="{Binding TotalWholesaleCost, StringFormat=N2}" Width="120"/>
+                            <DataGridTextColumn Header="Discount (PKR)"      Binding="{Binding Discount, StringFormat=N2}"           Width="105"/>
+                            <DataGridTextColumn Header="Profit (PKR)"        Binding="{Binding Profit, StringFormat=N2}"             Width="110" FontWeight="Bold"/>
+                            <DataGridTextColumn Header="Remarks"         Binding="{Binding Remarks}"                Width="*"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </Grid>
+            </TabItem>
+
+            <!-- ✅ Vendor Cash History -->
+            <TabItem Header="Vendor Cash History">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Per-vendor balance summary -->
+                    <Border Grid.Row="0" Background="#FFF8E1" Padding="12 8" Margin="0 0 0 4">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="Total Vendor Cash:"
+                                       FontWeight="Bold" FontSize="14"
+                                       VerticalAlignment="Center" Margin="0 0 10 0"/>
+                            <TextBlock x:Name="txtVendorCashTotal"
+                                       FontSize="18" FontWeight="Bold"
+                                       Foreground="#E65100" VerticalAlignment="Center"/>
+
+                            <TextBlock Text="  |  Per Vendor Balances:"
+                                       VerticalAlignment="Center" Margin="20 0 8 0"
+                                       FontSize="12" Foreground="#555"/>
+                            <TextBlock x:Name="txtVendorBalanceSummary"
+                                       VerticalAlignment="Center"
+                                       FontSize="12" Foreground="#1B4079"
+                                       FontStyle="Italic"/>
+                        </StackPanel>
+                    </Border>
+
+                    <DataGrid x:Name="dgVendorCash" Grid.Row="1"
+                              AutoGenerateColumns="False" IsReadOnly="True"
+                              CanUserAddRows="False" HeadersVisibility="Column"
+                              AlternatingRowBackground="#FFFEF5" RowHeight="36">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="#"           Binding="{Binding Id}"          Width="55"/>
+                            <DataGridTextColumn Header="Date"        Binding="{Binding TransactionDate, StringFormat={}{0:dd-MMM-yyyy hh:mm tt}}" Width="165"/>
+                            <DataGridTextColumn Header="Vendor"      Binding="{Binding VendorName}"   Width="140"/>
+                            <DataGridTextColumn Header="Type"        Binding="{Binding TypeDisplay}"  Width="160"/>
+                            <DataGridTextColumn Header="By Whom"     Binding="{Binding ByWhom}"       Width="120"/>
+                            <DataGridTextColumn Header="Amount (PKR)" Binding="{Binding Amount, StringFormat=N2}" Width="120"/>
+                            <DataGridTextColumn Header="Source"      Binding="{Binding Source}"       Width="80"/>
+                            <DataGridTextColumn Header="Vendor Cash After" Binding="{Binding VendorCashBalanceAfter, StringFormat=N2}" Width="140"/>
+                            <DataGridTextColumn Header="Remarks"     Binding="{Binding Remarks}"      Width="*"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </Grid>
+            </TabItem>
+
+        </TabControl>
+    </Grid>
+</Page>

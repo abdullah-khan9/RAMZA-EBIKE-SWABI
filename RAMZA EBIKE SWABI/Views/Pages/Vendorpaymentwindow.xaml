@@ -1,0 +1,106 @@
+<Window x:Class="Ramza_EBike_Swabi.Views.Windows.VendorPaymentWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Pay Vendor Balance"
+        Width="500" Height="700"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        Background="#F4F6F9">
+
+    <Grid Margin="28 24 28 20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Title -->
+        <StackPanel Grid.Row="0" Margin="0 0 0 18">
+            <TextBlock Text="Pay Remaining Balance" FontSize="20" FontWeight="Bold"
+                       Foreground="#1B4079"/>
+            <TextBlock x:Name="VendorNameText" FontSize="13" Foreground="#555"
+                       Margin="0 4 0 0"/>
+        </StackPanel>
+
+        <!-- Balance Summary Card -->
+        <Border Grid.Row="1" Background="White" CornerRadius="8"
+                Padding="16 12" Margin="0 0 0 18"
+                BorderBrush="#E0E0E0" BorderThickness="1">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel Grid.Column="0">
+                    <TextBlock Text="Remaining Bill Balance" FontSize="11" Foreground="#777"/>
+                    <TextBlock x:Name="RemainingBalanceDisplay"
+                               FontSize="22" FontWeight="Bold" Foreground="#B00020"/>
+                </StackPanel>
+                <StackPanel Grid.Column="1">
+                    <TextBlock Text="Balance After Payment" FontSize="11" Foreground="#777"/>
+                    <TextBlock x:Name="BalanceAfterDisplay"
+                               FontSize="22" FontWeight="Bold" Foreground="#1B8A3D"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- Form Fields -->
+        <StackPanel Grid.Row="2" VerticalAlignment="Top">
+
+            <!-- Amount to Pay -->
+            <TextBlock Text="Amount to Pay (PKR)" FontWeight="SemiBold" Margin="0 0 0 4"/>
+            <TextBox x:Name="AmountBox" Height="36" Padding="8 0"
+                     VerticalContentAlignment="Center" FontSize="15"
+                     TextChanged="AmountBox_TextChanged"/>
+
+            <!-- Payment Source -->
+            <TextBlock Text="Payment Source" FontWeight="SemiBold" Margin="0 14 0 4"/>
+            <ComboBox x:Name="PaymentSourceCombo" Height="36"
+                      SelectionChanged="PaymentSourceCombo_SelectionChanged">
+                <ComboBoxItem Content="Cash" IsSelected="True"/>
+                <ComboBoxItem Content="Account"/>
+                <ComboBoxItem Content="VendorCash"/>
+            </ComboBox>
+
+            <!-- Available Balance hint -->
+            <TextBlock x:Name="AvailableBalanceHint"
+                       FontSize="12" Foreground="#1B8A3D"
+                       Margin="0 4 0 0" FontStyle="Italic"/>
+
+            <!-- Paid To -->
+            <TextBlock Text="Paid To (Person Name)" FontWeight="SemiBold" Margin="0 14 0 4"/>
+            <TextBox x:Name="PaidToBox" Height="36" Padding="8 0"
+                     VerticalContentAlignment="Center"/>
+
+            <!-- Remarks -->
+            <TextBlock Text="Remarks (optional)" FontWeight="SemiBold" Margin="0 14 0 4"/>
+            <TextBox x:Name="RemarksBox" Height="60" Padding="8 6"
+                     TextWrapping="Wrap" AcceptsReturn="True"
+                     VerticalScrollBarVisibility="Auto"/>
+
+            <!-- Date & Time -->
+            <TextBlock Text="Payment Date" FontWeight="SemiBold" Margin="0 14 0 4"/>
+            <DatePicker x:Name="PaymentDatePicker" Height="36"
+                        SelectedDate="{x:Static sys:DateTime.Today}"
+                        xmlns:sys="clr-namespace:System;assembly=mscorlib"/>
+        </StackPanel>
+
+        <!-- Buttons -->
+        <Grid Grid.Row="3" Margin="0 16 0 0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="12"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <Button Grid.Column="0" Content="Cancel" Height="40"
+                    Background="#FF616161" Foreground="White"
+                    FontWeight="Bold" BorderThickness="0"
+                    Click="Cancel_Click"/>
+            <Button Grid.Column="2" Content="Submit Payment" Height="40"
+                    Background="#FF1B4079" Foreground="White"
+                    FontWeight="Bold" BorderThickness="0"
+                    Click="Submit_Click"/>
+        </Grid>
+    </Grid>
+</Window>

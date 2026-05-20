@@ -1,0 +1,76 @@
+<Window x:Class="Ramza_EBike_Swabi.Views.Pages.EditVendorCashLedgerWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Edit Transaction"
+        Height="600" Width="480"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        Background="#F4F6F9">
+    <StackPanel Margin="28 24 28 28">
+        <TextBlock Text="Edit Transaction Record"
+                   FontSize="18" FontWeight="Bold"
+                   Foreground="#1B4079" Margin="0 0 0 20"/>
+
+        <!-- Vendor (read-only) -->
+        <TextBlock Text="Vendor" FontWeight="Bold" FontSize="13" Margin="0 0 0 5"/>
+        <TextBox x:Name="txtVendorRO" Height="34"
+                 VerticalContentAlignment="Center" Padding="8 0"
+                 FontSize="13" Margin="0 0 0 14"
+                 IsReadOnly="True" Background="#EEF2FF"/>
+
+        <!-- Type (read-only) -->
+        <TextBlock Text="Type" FontWeight="Bold" FontSize="13" Margin="0 0 0 5"/>
+        <TextBox x:Name="txtTypeRO" Height="34"
+                 VerticalContentAlignment="Center" Padding="8 0"
+                 FontSize="13" Margin="0 0 0 14"
+                 IsReadOnly="True" Background="#EEF2FF"/>
+
+        <!-- Date -->
+        <TextBlock Text="Date *" FontWeight="Bold" FontSize="13" Margin="0 0 0 5"/>
+        <StackPanel Orientation="Horizontal" Margin="0 0 0 14">
+            <DatePicker x:Name="dpDate" Width="160" Height="34"/>
+            <TextBox x:Name="txtTime" Width="90" Height="34"
+                     Margin="10 0 0 0" VerticalContentAlignment="Center"
+                     Padding="8 0" FontSize="13"/>
+            <TextBlock Text="(HH:mm)" VerticalAlignment="Center"
+                       Foreground="#888" Margin="8 0 0 0"/>
+        </StackPanel>
+
+        <!-- By Whom -->
+        <TextBlock Text="By Whom *" FontWeight="Bold" FontSize="13" Margin="0 0 0 5"/>
+        <TextBox x:Name="txtByWhom" Height="34"
+                 VerticalContentAlignment="Center" Padding="8 0"
+                 FontSize="13" Margin="0 0 0 14"/>
+
+        <!-- Amount -->
+        <TextBlock Text="Amount (PKR) *" FontWeight="Bold" FontSize="13" Margin="0 0 0 5"/>
+        <TextBox x:Name="txtAmount" Height="34"
+                 VerticalContentAlignment="Center" Padding="8 0"
+                 FontSize="13" Margin="0 0 0 14"/>
+
+        <!-- Pay From (Source) -->
+        <TextBlock Text="Pay From *" FontWeight="Bold" FontSize="13" Margin="0 0 0 5"/>
+        <ComboBox x:Name="cmbSource" Height="34" FontSize="13" Margin="0 0 0 14">
+            <ComboBoxItem Content="Cash" Tag="Cash"/>
+            <ComboBoxItem Content="Account" Tag="Account"/>
+        </ComboBox>
+
+        <!-- Remarks -->
+        <TextBlock Text="Remarks" FontWeight="Bold" FontSize="13" Margin="0 0 0 5"/>
+        <TextBox x:Name="txtRemarks" Height="55"
+                 AcceptsReturn="True" TextWrapping="Wrap"
+                 Padding="8 6" FontSize="13" Margin="0 0 0 24"/>
+
+        <!-- Buttons -->
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button Content="Cancel" Width="100" Height="38"
+                    FontSize="13" Margin="0 0 10 0"
+                    Click="Cancel_Click"/>
+            <Button Content="Save Changes"
+                    Width="140" Height="38"
+                    Background="#FF1B4079" Foreground="White"
+                    FontWeight="Bold" FontSize="13"
+                    BorderThickness="0" Click="Save_Click"/>
+        </StackPanel>
+    </StackPanel>
+</Window>

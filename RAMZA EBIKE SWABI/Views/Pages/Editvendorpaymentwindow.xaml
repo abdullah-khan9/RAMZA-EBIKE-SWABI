@@ -1,0 +1,74 @@
+<Window x:Class="Ramza_EBike_Swabi.Views.Windows.EditVendorPaymentWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Edit Payment"
+        Width="460" Height="580"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        Background="#F4F6F9">
+
+    <Grid Margin="28 24 28 20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Title -->
+        <StackPanel Grid.Row="0" Margin="0 0 0 20">
+            <TextBlock Text="Edit Payment Record" FontSize="20" FontWeight="Bold"
+                       Foreground="#1B4079"/>
+            <TextBlock x:Name="SubtitleText" FontSize="12" Foreground="#666"
+                       Margin="0 4 0 0"/>
+        </StackPanel>
+
+        <!-- Form Fields -->
+        <StackPanel Grid.Row="1" VerticalAlignment="Top">
+
+            <!-- Amount -->
+            <TextBlock Text="Amount Paid (PKR)" FontWeight="SemiBold" Margin="0 0 0 4"/>
+            <TextBox x:Name="AmountBox" Height="36" Padding="8 0"
+                     VerticalContentAlignment="Center" FontSize="15"/>
+
+            <!-- Payment Source -->
+            <TextBlock Text="Payment Source" FontWeight="SemiBold" Margin="0 14 0 4"/>
+            <ComboBox x:Name="PaymentSourceCombo" Height="36">
+                <ComboBoxItem Content="Cash"/>
+                <ComboBoxItem Content="Account"/>
+                <ComboBoxItem Content="VendorCash"/>
+            </ComboBox>
+
+            <!-- Paid To -->
+            <TextBlock Text="Paid To (Person Name)" FontWeight="SemiBold" Margin="0 14 0 4"/>
+            <TextBox x:Name="PaidToBox" Height="36" Padding="8 0"
+                     VerticalContentAlignment="Center"/>
+
+            <!-- Payment Date -->
+            <TextBlock Text="Payment Date" FontWeight="SemiBold" Margin="0 14 0 4"/>
+            <DatePicker x:Name="PaymentDatePicker" Height="36"/>
+
+            <!-- Remarks -->
+            <TextBlock Text="Remarks (optional)" FontWeight="SemiBold" Margin="0 14 0 4"/>
+            <TextBox x:Name="RemarksBox" Height="60" Padding="8 6"
+                     TextWrapping="Wrap" AcceptsReturn="True"
+                     VerticalScrollBarVisibility="Auto"/>
+        </StackPanel>
+
+        <!-- Buttons -->
+        <Grid Grid.Row="2" Margin="0 16 0 0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="12"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <Button Grid.Column="0" Content="Cancel" Height="40"
+                    Background="#FF616161" Foreground="White"
+                    FontWeight="Bold" BorderThickness="0"
+                    Click="Cancel_Click"/>
+            <Button Grid.Column="2" Content="Save Changes" Height="40"
+                    Background="#FF1B4079" Foreground="White"
+                    FontWeight="Bold" BorderThickness="0"
+                    Click="Save_Click"/>
+        </Grid>
+    </Grid>
+</Window>

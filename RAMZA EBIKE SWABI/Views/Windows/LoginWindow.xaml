@@ -1,0 +1,82 @@
+﻿<Window x:Class="Ramza_EBike_Swabi.Views.Windows.LoginWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:pages="clr-namespace:Ramza_EBike_Swabi.Views.Pages"
+        Title="Login - Ramza Electric Bike Swabi"
+        WindowStartupLocation="CenterScreen"
+        WindowState="Maximized"
+        ResizeMode="NoResize"
+        WindowStyle="None">
+
+    <Grid Background="#F5F6FA">
+
+        <!-- ✅ UPDATED ROWS -->
+        <Grid.RowDefinitions>
+            <RowDefinition Height="45"/>
+            <!-- Top Bar -->
+            <RowDefinition Height="Auto"/>
+            <!-- Header Text -->
+            <RowDefinition Height="*"/>
+            <!-- Login Frame -->
+        </Grid.RowDefinitions>
+
+        <!-- ✅ TOP BAR -->
+        <Border Background="#008000">
+
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="45"/>
+                    <ColumnDefinition Width="45"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- TITLE -->
+                <TextBlock Text="Welcome to Swabi Enterprises"
+                           Foreground="#F5F6FA"
+                           FontSize="25"
+                           FontWeight="Bold"
+                           FontFamily="Traditional Arabic"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Center"
+                           Margin="80,0,0,0"
+                           />
+
+                <!-- MINIMIZE -->
+                <Button Content="—"
+                        FontSize="18"
+                        Background="Transparent"
+                        Foreground="White"
+                        BorderThickness="0"
+                        Grid.Column="1"
+                        Click="Minimize_Click"/>
+
+                <!-- CLOSE -->
+                <Button Content="✕"
+                        FontSize="16"
+                        Background="Transparent"
+                        Foreground="White"
+                        BorderThickness="0"
+                        Grid.Column="2"
+                        Click="Close_Click"/>
+            </Grid>
+        </Border>
+
+        <!-- ✅ CENTERED HEADER -->
+        <TextBlock Grid.Row="1"
+                   Text="بِسْمِ ٱللَّٰهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ"
+                   FontSize="50"
+                   FontWeight="Bold"
+                   Foreground="#2F3640"
+                   FontFamily="Traditional Arabic"
+                   HorizontalAlignment="Center"
+                   VerticalAlignment="Center"
+                   Margin="0,25,0,15"/>
+
+        <!-- ✅ LOGIN FRAME -->
+        <Frame x:Name="ShellFrame"
+               Grid.Row="2"
+               NavigationUIVisibility="Hidden"
+               Background="Transparent"/>
+
+    </Grid>
+</Window>
