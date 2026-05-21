@@ -335,8 +335,13 @@ namespace Ramza_EBike_Swabi.Services
         }
 
         // ===========================
-        // RECORD VENDOR PAYMENT
+        // RECORD VENDOR PAYMENT — FIXED
         // ===========================
+        /*
+            Cash payment    → WithdrawFromCash      (Cash Balance kam)
+            Account payment → WithdrawFromAccount   (Bank Balance kam)
+            VendorCash      → no AccountTransaction (already vendor cash se jata hai)
+        */
         public async Task RecordVendorPaymentAsync(
             VendorPaymentRecord record,
             string paymentSource,
@@ -353,20 +358,24 @@ namespace Ramza_EBike_Swabi.Services
                 await db.SaveChangesAsync();
             }
 
-            var txn = new AccountTransaction
-            {
-                Type = TransactionType.WithdrawFromCash,
-                ByWhom = record.PaidTo,
-                Amount = record.AmountPaid,
-                TransactionDate = record.PaymentDate,
-                Remarks = BuildPaymentRemark(paymentSource, record.VendorName, record.Remarks)
-            };
+            AccountTransaction? txn = null;
 
             switch (paymentSource)
             {
                 case "Account":
                     balance.BankBalance -= record.AmountPaid;
                     if (balance.BankBalance < 0) balance.BankBalance = 0;
+                    txn = new AccountTransaction
+                    {
+                        // ✅ Account se payment → WithdrawFromAccount
+                        Type = TransactionType.WithdrawFromAccount,
+                        ByWhom = record.PaidTo,
+                        Amount = record.AmountPaid,
+                        TransactionDate = record.PaymentDate,
+                        Remarks = BuildPaymentRemark(paymentSource, record.VendorName, record.Remarks),
+                        CashBalanceAfter = balance.CashBalance,
+                        BankBalanceAfter = balance.BankBalance
+                    };
                     break;
 
                 case "VendorCash":
@@ -388,29 +397,42 @@ namespace Ramza_EBike_Swabi.Services
                         VendorCashBalanceAfter = vcBalance?.Balance ?? 0,
                         TransactionDate = record.PaymentDate,
                         Remarks = "Applied to bill balance" +
-                                                 (string.IsNullOrWhiteSpace(record.Remarks) ? "" : $" | {record.Remarks}")
+                                  (string.IsNullOrWhiteSpace(record.Remarks) ? "" : $" | {record.Remarks}")
                     });
+                    // VendorCash se payment mein koi AccountTransaction nahi
                     break;
 
                 default: // Cash
                     balance.CashBalance -= record.AmountPaid;
                     if (balance.CashBalance < 0) balance.CashBalance = 0;
+                    txn = new AccountTransaction
+                    {
+                        // ✅ Cash se payment → WithdrawFromCash
+                        Type = TransactionType.WithdrawFromCash,
+                        ByWhom = record.PaidTo,
+                        Amount = record.AmountPaid,
+                        TransactionDate = record.PaymentDate,
+                        Remarks = BuildPaymentRemark(paymentSource, record.VendorName, record.Remarks),
+                        CashBalanceAfter = balance.CashBalance,
+                        BankBalanceAfter = balance.BankBalance
+                    };
                     break;
             }
 
-            txn.CashBalanceAfter = balance.CashBalance;
-            txn.BankBalanceAfter = balance.BankBalance;
+            if (txn != null)
+                db.AccountTransactions.Add(txn);
 
-            db.AccountTransactions.Add(txn);
             await db.SaveChangesAsync();
 
-            record.AccountTransactionId = txn.Id;
+            if (txn != null)
+                record.AccountTransactionId = txn.Id;
+
             db.VendorPaymentRecords.Add(record);
             await db.SaveChangesAsync();
         }
 
         // ===========================
-        // DELETE VENDOR PAYMENT
+        // DELETE VENDOR PAYMENT — FIXED
         // ===========================
         public async Task DeleteVendorPaymentAsync(int paymentId)
         {
@@ -428,6 +450,18 @@ namespace Ramza_EBike_Swabi.Services
             {
                 case "Account":
                     balance.BankBalance += record.AmountPaid;
+                    // ✅ Reversal of Account payment → DepositToAccount
+                    db.AccountTransactions.Add(new AccountTransaction
+                    {
+                        Type = TransactionType.DepositToAccount,
+                        ByWhom = record.VendorName,
+                        Amount = record.AmountPaid,
+                        TransactionDate = DateTime.Now,
+                        Remarks = $"REVERSAL — Vendor payment #{record.Id} deleted | " +
+                                  $"Original: Account to {record.VendorName} on {record.PaymentDate:dd-MMM-yyyy}",
+                        CashBalanceAfter = balance.CashBalance,
+                        BankBalanceAfter = balance.BankBalance
+                    });
                     break;
 
                 case "VendorCash":
@@ -452,20 +486,20 @@ namespace Ramza_EBike_Swabi.Services
 
                 default: // Cash
                     balance.CashBalance += record.AmountPaid;
+                    // ✅ Reversal of Cash payment → CashDeposit
+                    db.AccountTransactions.Add(new AccountTransaction
+                    {
+                        Type = TransactionType.CashDeposit,
+                        ByWhom = record.VendorName,
+                        Amount = record.AmountPaid,
+                        TransactionDate = DateTime.Now,
+                        Remarks = $"REVERSAL — Vendor payment #{record.Id} deleted | " +
+                                  $"Original: Cash to {record.VendorName} on {record.PaymentDate:dd-MMM-yyyy}",
+                        CashBalanceAfter = balance.CashBalance,
+                        BankBalanceAfter = balance.BankBalance
+                    });
                     break;
             }
-
-            db.AccountTransactions.Add(new AccountTransaction
-            {
-                Type = TransactionType.CashDeposit,
-                ByWhom = record.VendorName,
-                Amount = record.AmountPaid,
-                TransactionDate = DateTime.Now,
-                Remarks = $"REVERSAL — Vendor payment #{record.Id} deleted | " +
-                                  $"Original: {source} to {record.VendorName} on {record.PaymentDate:dd-MMM-yyyy}",
-                CashBalanceAfter = balance.CashBalance,
-                BankBalanceAfter = balance.BankBalance
-            });
 
             if (record.AccountTransactionId.HasValue)
             {
@@ -480,7 +514,7 @@ namespace Ramza_EBike_Swabi.Services
         }
 
         // ===========================
-        // UPDATE VENDOR PAYMENT
+        // UPDATE VENDOR PAYMENT — FIXED
         // ===========================
         public async Task UpdateVendorPaymentAsync(VendorPaymentRecord updated)
         {
@@ -505,6 +539,21 @@ namespace Ramza_EBike_Swabi.Services
                     case "Account":
                         balance.BankBalance -= delta;
                         if (balance.BankBalance < 0) balance.BankBalance = 0;
+                        // ✅ Account adjustment
+                        db.AccountTransactions.Add(new AccountTransaction
+                        {
+                            Type = delta > 0
+                                ? TransactionType.WithdrawFromAccount
+                                : TransactionType.DepositToAccount,
+                            ByWhom = updated.PaidTo ?? existing.PaidTo,
+                            Amount = Math.Abs(delta),
+                            TransactionDate = DateTime.Now,
+                            Remarks = $"ADJUSTMENT — Vendor payment #{existing.Id} edited | " +
+                                      $"Account | {existing.VendorName} | " +
+                                      $"Was: PKR {oldAmount:N2} → Now: PKR {newAmount:N2}",
+                            CashBalanceAfter = balance.CashBalance,
+                            BankBalanceAfter = balance.BankBalance
+                        });
                         break;
 
                     case "VendorCash":
@@ -526,31 +575,32 @@ namespace Ramza_EBike_Swabi.Services
                             VendorCashBalanceAfter = vcBalance?.Balance ?? 0,
                             TransactionDate = DateTime.Now,
                             Remarks = $"Adjustment — payment #{existing.Id} edited | " +
-                                                     $"Was: PKR {oldAmount:N2} → Now: PKR {newAmount:N2}"
+                                      $"Was: PKR {oldAmount:N2} → Now: PKR {newAmount:N2}"
                         });
                         break;
 
                     default: // Cash
                         balance.CashBalance -= delta;
                         if (balance.CashBalance < 0) balance.CashBalance = 0;
+                        // ✅ Cash adjustment
+                        db.AccountTransactions.Add(new AccountTransaction
+                        {
+                            Type = delta > 0
+                                ? TransactionType.WithdrawFromCash
+                                : TransactionType.CashDeposit,
+                            ByWhom = updated.PaidTo ?? existing.PaidTo,
+                            Amount = Math.Abs(delta),
+                            TransactionDate = DateTime.Now,
+                            Remarks = $"ADJUSTMENT — Vendor payment #{existing.Id} edited | " +
+                                      $"Cash | {existing.VendorName} | " +
+                                      $"Was: PKR {oldAmount:N2} → Now: PKR {newAmount:N2}",
+                            CashBalanceAfter = balance.CashBalance,
+                            BankBalanceAfter = balance.BankBalance
+                        });
                         break;
                 }
 
-                db.AccountTransactions.Add(new AccountTransaction
-                {
-                    Type = delta > 0
-                                        ? TransactionType.WithdrawFromCash
-                                        : TransactionType.CashDeposit,
-                    ByWhom = updated.PaidTo ?? existing.PaidTo,
-                    Amount = Math.Abs(delta),
-                    TransactionDate = DateTime.Now,
-                    Remarks = $"ADJUSTMENT — Vendor payment #{existing.Id} edited | " +
-                                      $"{source} | {existing.VendorName} | " +
-                                      $"Was: PKR {oldAmount:N2} → Now: PKR {newAmount:N2}",
-                    CashBalanceAfter = balance.CashBalance,
-                    BankBalanceAfter = balance.BankBalance
-                });
-
+                // Update original transaction if exists
                 if (existing.AccountTransactionId.HasValue)
                 {
                     var originalTxn = await db.AccountTransactions

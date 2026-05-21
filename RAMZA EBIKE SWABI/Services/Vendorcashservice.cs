@@ -14,11 +14,6 @@ namespace Ramza_EBike_Swabi.Services
         // ===========================
         // ADD CASH TO VENDOR
         // ===========================
-        /// <summary>
-        /// Poora amount vendor cash balance mein add hota hai.
-        /// Remaining bill balance pe kuch apply NAHI hota.
-        /// Agar user bill pay karna chahta hai tu "Pay Remaining" button use kare.
-        /// </summary>
         public async Task<(bool Success, string Message)> AddCashToVendorAsync(
             int vendorId,
             string vendorName,
@@ -72,10 +67,11 @@ namespace Ramza_EBike_Swabi.Services
                 await db.SaveChangesAsync();
             }
 
-            // Step 3: Add full amount to vendor cash — no auto-apply to bills
+            // Step 3: Add full amount to vendor cash
             vendorCash.Balance += amount;
 
-            string ledgerRemarks = remarks?.Trim() ?? string.Empty;
+            string ledgerRemarks = $"Cash to Vendor: {vendorName}" +
+                                   (string.IsNullOrWhiteSpace(remarks) ? "" : $" | {remarks}");
 
             db.VendorCashLedger.Add(new VendorCashLedger
             {
@@ -90,17 +86,18 @@ namespace Ramza_EBike_Swabi.Services
                 VendorCashBalanceAfter = vendorCash.Balance
             });
 
-            // Step 4: Record in account transactions
+            // ✅ Step 4: Correct TransactionType
+            // Cash se vendor cash → WithdrawFromCash  (sirf Cash Balance kam)
+            // Account se vendor cash → WithdrawFromAccount (sirf Bank Balance kam)
             db.AccountTransactions.Add(new AccountTransaction
             {
                 Type = source == "Cash"
-                                     ? TransactionType.WithdrawFromCash
-                                     : TransactionType.CashWithdraw,
+                    ? TransactionType.WithdrawFromCash
+                    : TransactionType.WithdrawFromAccount,
                 ByWhom = byWhom,
                 Amount = amount,
                 TransactionDate = transactionDate,
-                Remarks = $"Cash to Vendor: {vendorName}" +
-                                   (string.IsNullOrEmpty(ledgerRemarks) ? "" : $" | {ledgerRemarks}"),
+                Remarks = ledgerRemarks,
                 CashBalanceAfter = accountBalance.CashBalance,
                 BankBalanceAfter = accountBalance.BankBalance
             });
@@ -110,7 +107,7 @@ namespace Ramza_EBike_Swabi.Services
         }
 
         // ===========================
-        // DEDUCT FROM VENDOR CASH (when paying a bill using vendor cash)
+        // DEDUCT FROM VENDOR CASH
         // ===========================
         public async Task<(bool Success, string Message)> DeductVendorCashAsync(
             int vendorId, decimal amount, string remarks)
