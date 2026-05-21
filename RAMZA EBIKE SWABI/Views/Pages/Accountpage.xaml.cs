@@ -20,26 +20,117 @@ namespace Ramza_EBike_Swabi.Views.Pages
         public decimal BankBalanceAfter { get; set; }
         public string? Remarks { get; set; }
 
-        // ✅ Green = money IN, Red = money OUT
-        public bool IsIncoming { get; set; }
-        public SolidColorBrush RowColor => IsIncoming
-            ? new SolidColorBrush(Color.FromRgb(0xE8, 0xF5, 0xE9))   // light green
-            : new SolidColorBrush(Color.FromRgb(0xFF, 0xEB, 0xEE));   // light red
-        public SolidColorBrush AmountColor => IsIncoming
-            ? new SolidColorBrush(Color.FromRgb(0x1B, 0x5E, 0x20))   // dark green
-            : new SolidColorBrush(Color.FromRgb(0xB7, 0x1C, 0x1C));   // dark red
+        // ── Per-tab direction flags ──
+        public bool IsCashIncoming { get; set; }
+        public bool IsAccountIncoming { get; set; }
 
+        // ── Cash tab affected / not ──
+        public bool CashAffected { get; set; }
+        // ── Account tab affected / not ──
+        public bool AccountAffected { get; set; }
+
+        // ══════════════════════════════
+        // CASH TAB
+        // ══════════════════════════════
+        public SolidColorBrush CashRowColor => IsCashIncoming
+            ? new SolidColorBrush(Color.FromRgb(0xE8, 0xF5, 0xE9))
+            : new SolidColorBrush(Color.FromRgb(0xFF, 0xEB, 0xEE));
+        public SolidColorBrush CashAmountColor => IsCashIncoming
+            ? new SolidColorBrush(Color.FromRgb(0x1B, 0x5E, 0x20))
+            : new SolidColorBrush(Color.FromRgb(0xB7, 0x1C, 0x1C));
+        public string CashArrow => IsCashIncoming ? "▲" : "▼";
+
+        // ══════════════════════════════
+        // ACCOUNT TAB
+        // ══════════════════════════════
+        public SolidColorBrush AccountRowColor => IsAccountIncoming
+            ? new SolidColorBrush(Color.FromRgb(0xE8, 0xF5, 0xE9))
+            : new SolidColorBrush(Color.FromRgb(0xFF, 0xEB, 0xEE));
+        public SolidColorBrush AccountAmountColor => IsAccountIncoming
+            ? new SolidColorBrush(Color.FromRgb(0x1B, 0x5E, 0x20))
+            : new SolidColorBrush(Color.FromRgb(0xB7, 0x1C, 0x1C));
+        public string AccountArrow => IsAccountIncoming ? "▲" : "▼";
+
+        // ══════════════════════════════
+        // ALL TRANSACTIONS TAB
+        // ══════════════════════════════
+        // Row: green agar kuch aaya (cash ya account), red agar sirf gaya
+        public SolidColorBrush RowColor
+        {
+            get
+            {
+                bool anyIncoming = (CashAffected && IsCashIncoming) ||
+                                   (AccountAffected && IsAccountIncoming);
+                bool anyOutgoing = (CashAffected && !IsCashIncoming) ||
+                                   (AccountAffected && !IsAccountIncoming);
+
+                // Convert/Withdraw — dono affected: mixed row — white/neutral
+                if (anyIncoming && anyOutgoing)
+                    return new SolidColorBrush(Color.FromRgb(0xFF, 0xF9, 0xE3)); // light yellow
+                if (anyIncoming)
+                    return new SolidColorBrush(Color.FromRgb(0xE8, 0xF5, 0xE9)); // green
+                return new SolidColorBrush(Color.FromRgb(0xFF, 0xEB, 0xEE));     // red
+            }
+        }
+
+        // Cash column in All tab
+        public SolidColorBrush AllCashColor => IsCashIncoming
+            ? new SolidColorBrush(Color.FromRgb(0x1B, 0x5E, 0x20))
+            : new SolidColorBrush(Color.FromRgb(0xB7, 0x1C, 0x1C));
+        public string AllCashArrow => IsCashIncoming ? "▲" : "▼";
+        // Empty string agar cash affected nahi
+        public string AllCashText => CashAffected ? $"{Amount:N2}" : string.Empty;
+        public string AllCashArrowText => CashAffected ? AllCashArrow : string.Empty;
+
+        // Account column in All tab
+        public SolidColorBrush AllAccountColor => IsAccountIncoming
+            ? new SolidColorBrush(Color.FromRgb(0x1B, 0x5E, 0x20))
+            : new SolidColorBrush(Color.FromRgb(0xB7, 0x1C, 0x1C));
+        public string AllAccountArrow => IsAccountIncoming ? "▲" : "▼";
+        public string AllAccountText => AccountAffected ? $"{Amount:N2}" : string.Empty;
+        public string AllAccountArrowText => AccountAffected ? AllAccountArrow : string.Empty;
+
+        // ══════════════════════════════
+        // FROM
+        // ══════════════════════════════
         public static TransactionDisplayRow From(AccountTransaction t)
         {
-            // ✅ Incoming = money coming IN to cash or account
-            bool isIncoming = t.Type is
-                TransactionType.CashDeposit or
-                TransactionType.DepositToAccount or
-                TransactionType.CashWithdraw;         // Account→Cash: cash mein aata hai
+            // Cash tab direction
+            bool isCashIncoming = t.Type switch
+            {
+                TransactionType.CashDeposit => true,   // external → cash ↑
+                TransactionType.CashWithdraw => true,   // account → cash ↑
+                TransactionType.ConvertCashToAccount => false,  // cash → account: cash ↓
+                TransactionType.WithdrawFromCash => false,  // spent: cash ↓
+                TransactionType.WithdrawFromAccount => false,
+                TransactionType.DepositToAccount => false,
+                _ => false
+            };
 
-            // ConvertCashToAccount: cash out → account in (neutral, treat as outgoing from cash)
-            if (t.Type == TransactionType.ConvertCashToAccount)
-                isIncoming = false;
+            // Account tab direction
+            bool isAccountIncoming = t.Type switch
+            {
+                TransactionType.DepositToAccount => true,   // external → account ↑
+                TransactionType.ConvertCashToAccount => true,   // cash → account ↑
+                TransactionType.CashWithdraw => false,  // account → cash: account ↓
+                TransactionType.WithdrawFromAccount => false,  // spent: account ↓
+                TransactionType.CashDeposit => false,
+                TransactionType.WithdrawFromCash => false,
+                _ => false
+            };
+
+            // Which balances are affected?
+            bool cashAffected = t.Type is
+                TransactionType.CashDeposit or
+                TransactionType.CashWithdraw or
+                TransactionType.ConvertCashToAccount or
+                TransactionType.WithdrawFromCash;
+
+            bool accountAffected = t.Type is
+                TransactionType.DepositToAccount or
+                TransactionType.CashWithdraw or
+                TransactionType.ConvertCashToAccount or
+                TransactionType.WithdrawFromAccount;
 
             return new TransactionDisplayRow
             {
@@ -60,7 +151,10 @@ namespace Ramza_EBike_Swabi.Views.Pages
                 CashBalanceAfter = t.CashBalanceAfter,
                 BankBalanceAfter = t.BankBalanceAfter,
                 Remarks = t.Remarks,
-                IsIncoming = isIncoming
+                IsCashIncoming = isCashIncoming,
+                IsAccountIncoming = isAccountIncoming,
+                CashAffected = cashAffected,
+                AccountAffected = accountAffected
             };
         }
     }
@@ -144,14 +238,12 @@ namespace Ramza_EBike_Swabi.Views.Pages
             LoadAll();
         }
 
-        // ✅ Helper — Cash tab mein kya aaye
         private static bool IsCashTransaction(TransactionDisplayRow t) =>
             t.TypeDisplay == "Cash Deposited" ||
             t.TypeDisplay == "Withdrawn from Account to Cash" ||
             t.TypeDisplay == "Cash Converted to Account" ||
             t.TypeDisplay == "Withdrawn / Spent from Cash";
 
-        // ✅ Helper — Account tab mein kya aaye
         private static bool IsAccountTransaction(TransactionDisplayRow t) =>
             t.TypeDisplay == "Deposited to Account" ||
             t.TypeDisplay == "Withdrawn / Spent from Account" ||
@@ -177,14 +269,11 @@ namespace Ramza_EBike_Swabi.Views.Pages
                 var allRows = txns.Select(TransactionDisplayRow.From).ToList();
                 dgTransactions.ItemsSource = allRows;
 
-                // ✅ Cash tab
-                dgCashTransactions.ItemsSource = allRows.Where(IsCashTransaction).ToList();
-
-                // ✅ Account tab
-                dgAccountTransactions.ItemsSource = allRows.Where(IsAccountTransaction).ToList();
-
                 var cashList = allRows.Where(IsCashTransaction).ToList();
                 var accountList = allRows.Where(IsAccountTransaction).ToList();
+                dgCashTransactions.ItemsSource = cashList;
+                dgAccountTransactions.ItemsSource = accountList;
+
                 txnCountHint.Text = $"Showing recent 10 transactions (Cash: {cashList.Count}, Account: {accountList.Count})";
 
                 var profits = await _profitService.GetRecentProfitRecordsAsync(10);
@@ -221,7 +310,6 @@ namespace Ramza_EBike_Swabi.Views.Pages
 
             var cashList = allRows.Where(IsCashTransaction).ToList();
             var accountList = allRows.Where(IsAccountTransaction).ToList();
-
             dgCashTransactions.ItemsSource = cashList;
             dgAccountTransactions.ItemsSource = accountList;
 
