@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Media;
 using Ramza_EBike_Swabi.Models;
 using Ramza_EBike_Swabi.Services;
 
@@ -19,26 +20,49 @@ namespace Ramza_EBike_Swabi.Views.Pages
         public decimal BankBalanceAfter { get; set; }
         public string? Remarks { get; set; }
 
-        public static TransactionDisplayRow From(AccountTransaction t) => new()
+        // ✅ Green = money IN, Red = money OUT
+        public bool IsIncoming { get; set; }
+        public SolidColorBrush RowColor => IsIncoming
+            ? new SolidColorBrush(Color.FromRgb(0xE8, 0xF5, 0xE9))   // light green
+            : new SolidColorBrush(Color.FromRgb(0xFF, 0xEB, 0xEE));   // light red
+        public SolidColorBrush AmountColor => IsIncoming
+            ? new SolidColorBrush(Color.FromRgb(0x1B, 0x5E, 0x20))   // dark green
+            : new SolidColorBrush(Color.FromRgb(0xB7, 0x1C, 0x1C));   // dark red
+
+        public static TransactionDisplayRow From(AccountTransaction t)
         {
-            Id = t.Id,
-            TransactionDate = t.TransactionDate,
-            TypeDisplay = t.Type switch
+            // ✅ Incoming = money coming IN to cash or account
+            bool isIncoming = t.Type is
+                TransactionType.CashDeposit or
+                TransactionType.DepositToAccount or
+                TransactionType.CashWithdraw;         // Account→Cash: cash mein aata hai
+
+            // ConvertCashToAccount: cash out → account in (neutral, treat as outgoing from cash)
+            if (t.Type == TransactionType.ConvertCashToAccount)
+                isIncoming = false;
+
+            return new TransactionDisplayRow
             {
-                TransactionType.CashDeposit => "Cash Deposited",
-                TransactionType.DepositToAccount => "Deposited to Account",
-                TransactionType.CashWithdraw => "Withdrawn from Account to Cash",
-                TransactionType.ConvertCashToAccount => "Cash Converted to Account",
-                TransactionType.WithdrawFromCash => "Withdrawn / Spent from Cash",
-                TransactionType.WithdrawFromAccount => "Withdrawn / Spent from Account",  // ✅ NEW
-                _ => t.Type.ToString()
-            },
-            ByWhom = t.ByWhom,
-            Amount = t.Amount,
-            CashBalanceAfter = t.CashBalanceAfter,
-            BankBalanceAfter = t.BankBalanceAfter,
-            Remarks = t.Remarks
-        };
+                Id = t.Id,
+                TransactionDate = t.TransactionDate,
+                TypeDisplay = t.Type switch
+                {
+                    TransactionType.CashDeposit => "Cash Deposited",
+                    TransactionType.DepositToAccount => "Deposited to Account",
+                    TransactionType.CashWithdraw => "Withdrawn from Account to Cash",
+                    TransactionType.ConvertCashToAccount => "Cash Converted to Account",
+                    TransactionType.WithdrawFromCash => "Withdrawn / Spent from Cash",
+                    TransactionType.WithdrawFromAccount => "Withdrawn / Spent from Account",
+                    _ => t.Type.ToString()
+                },
+                ByWhom = t.ByWhom,
+                Amount = t.Amount,
+                CashBalanceAfter = t.CashBalanceAfter,
+                BankBalanceAfter = t.BankBalanceAfter,
+                Remarks = t.Remarks,
+                IsIncoming = isIncoming
+            };
+        }
     }
 
     public class ProfitDisplayRow
@@ -120,6 +144,20 @@ namespace Ramza_EBike_Swabi.Views.Pages
             LoadAll();
         }
 
+        // ✅ Helper — Cash tab mein kya aaye
+        private static bool IsCashTransaction(TransactionDisplayRow t) =>
+            t.TypeDisplay == "Cash Deposited" ||
+            t.TypeDisplay == "Withdrawn from Account to Cash" ||
+            t.TypeDisplay == "Cash Converted to Account" ||
+            t.TypeDisplay == "Withdrawn / Spent from Cash";
+
+        // ✅ Helper — Account tab mein kya aaye
+        private static bool IsAccountTransaction(TransactionDisplayRow t) =>
+            t.TypeDisplay == "Deposited to Account" ||
+            t.TypeDisplay == "Withdrawn / Spent from Account" ||
+            t.TypeDisplay == "Withdrawn from Account to Cash" ||
+            t.TypeDisplay == "Cash Converted to Account";
+
         private async void LoadAll()
         {
             try
@@ -139,23 +177,15 @@ namespace Ramza_EBike_Swabi.Views.Pages
                 var allRows = txns.Select(TransactionDisplayRow.From).ToList();
                 dgTransactions.ItemsSource = allRows;
 
-                // ✅ Cash Transactions
-                var cashTxns = allRows.Where(t =>
-                    t.TypeDisplay.Contains("Cash Deposited") ||
-                    t.TypeDisplay.Contains("Withdrawn from Account to Cash") ||
-                    t.TypeDisplay.Contains("Cash Converted to Account") ||
-                    t.TypeDisplay.Contains("Withdrawn / Spent from Cash")).ToList();
-                dgCashTransactions.ItemsSource = cashTxns;
+                // ✅ Cash tab
+                dgCashTransactions.ItemsSource = allRows.Where(IsCashTransaction).ToList();
 
-                // ✅ Account Transactions — WithdrawFromAccount bhi include
-                var accountTxns = allRows.Where(t =>
-                    t.TypeDisplay.Contains("Deposited to Account") ||
-                    t.TypeDisplay.Contains("Withdrawn / Spent from Account") ||
-                    t.TypeDisplay.Contains("Withdrawn from Account to Cash") ||
-                    t.TypeDisplay.Contains("Cash Converted to Account")).ToList();
-                dgAccountTransactions.ItemsSource = accountTxns;
+                // ✅ Account tab
+                dgAccountTransactions.ItemsSource = allRows.Where(IsAccountTransaction).ToList();
 
-                txnCountHint.Text = $"Showing recent 10 transactions (Cash: {cashTxns.Count}, Account: {accountTxns.Count})";
+                var cashList = allRows.Where(IsCashTransaction).ToList();
+                var accountList = allRows.Where(IsAccountTransaction).ToList();
+                txnCountHint.Text = $"Showing recent 10 transactions (Cash: {cashList.Count}, Account: {accountList.Count})";
 
                 var profits = await _profitService.GetRecentProfitRecordsAsync(10);
                 dgProfit.ItemsSource = profits.Select(ProfitDisplayRow.From).ToList();
@@ -189,23 +219,13 @@ namespace Ramza_EBike_Swabi.Views.Pages
             var allRows = txns.Select(TransactionDisplayRow.From).ToList();
             dgTransactions.ItemsSource = allRows;
 
-            // ✅ Cash filter
-            var cashTxns = allRows.Where(t =>
-                t.TypeDisplay.Contains("Cash Deposited") ||
-                t.TypeDisplay.Contains("Withdrawn from Account to Cash") ||
-                t.TypeDisplay.Contains("Cash Converted to Account") ||
-                t.TypeDisplay.Contains("Withdrawn / Spent from Cash")).ToList();
-            dgCashTransactions.ItemsSource = cashTxns;
+            var cashList = allRows.Where(IsCashTransaction).ToList();
+            var accountList = allRows.Where(IsAccountTransaction).ToList();
 
-            // ✅ Account filter — WithdrawFromAccount bhi include
-            var accountTxns = allRows.Where(t =>
-                t.TypeDisplay.Contains("Deposited to Account") ||
-                t.TypeDisplay.Contains("Withdrawn / Spent from Account") ||
-                t.TypeDisplay.Contains("Withdrawn from Account to Cash") ||
-                t.TypeDisplay.Contains("Cash Converted to Account")).ToList();
-            dgAccountTransactions.ItemsSource = accountTxns;
+            dgCashTransactions.ItemsSource = cashList;
+            dgAccountTransactions.ItemsSource = accountList;
 
-            txnCountHint.Text = $"{allRows.Count} transaction(s) found (Cash: {cashTxns.Count}, Account: {accountTxns.Count})";
+            txnCountHint.Text = $"{allRows.Count} transaction(s) found (Cash: {cashList.Count}, Account: {accountList.Count})";
 
             var profits = await _profitService.GetProfitByDateRangeAsync(from, to);
             dgProfit.ItemsSource = profits.Select(ProfitDisplayRow.From).ToList();
