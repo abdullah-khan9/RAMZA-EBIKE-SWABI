@@ -346,7 +346,7 @@ namespace Ramza_EBike_Swabi.Views.Pages
         }
 
         // ── History ───────────────────────────────────────────────────────────
-        private void History_Click(object sender, RoutedEventArgs e)
+        private async void History_Click(object sender, RoutedEventArgs e)
         {
             if ((sender as Button)?.DataContext is not CustomerDueRow row) return;
 
@@ -355,6 +355,10 @@ namespace Ramza_EBike_Swabi.Views.Pages
                 Owner = Window.GetWindow(this)
             };
             win.ShowDialog();
+
+            // ✅ Reload if history was edited or deleted
+            if (win.WasModified)
+                await LoadAsync();
         }
 
         // ── Download Excel ────────────────────────────────────────────────────
