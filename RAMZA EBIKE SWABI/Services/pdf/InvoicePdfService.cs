@@ -2,7 +2,10 @@
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
 using Ramza_EBike_Swabi.Models;
+using Ramza_EBike_Swabi.Data;
+using Microsoft.EntityFrameworkCore;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -20,6 +23,17 @@ namespace Ramza_EBike_Swabi.Services.Pdf
         {
             QuestPDF.Settings.License = LicenseType.Community;
 
+            // ✅ Issue 4: Fetch payment history from DB
+            List<CustomerPaymentHistory> paymentHistory;
+            using (var db = new AppDbContext())
+            {
+                paymentHistory = db.CustomerPaymentHistories
+                    .Where(h => h.CustomerInvoiceId == invoice.CustomerInvoiceId)
+                    .OrderBy(h => h.PaymentDate)
+                    .ThenBy(h => h.Id)
+                    .ToList();
+            }
+
             string logoPath = Path.Combine(
                 AppDomain.CurrentDomain.BaseDirectory,
                 "Resources", "logo.png");
@@ -30,7 +44,7 @@ namespace Ramza_EBike_Swabi.Services.Pdf
 
             string billStatus = invoice.RemainingBalance <= 0 ? "CLEAR"
                               : invoice.AmountPaid > 0 ? "PARTIALLY PAID"
-                                                              : "UNPAID";
+                                                               : "UNPAID";
 
             Document.Create(container =>
             {
@@ -40,12 +54,11 @@ namespace Ramza_EBike_Swabi.Services.Pdf
                     page.Margin(18);
                     page.DefaultTextStyle(x => x.FontSize(9).FontFamily("Arial"));
 
-                    // ===== HEADER =====
+                    // ═══════════════ HEADER ═══════════════
                     page.Header().Column(headerCol =>
                     {
                         headerCol.Item().Row(row =>
                         {
-                            // Logo
                             row.ConstantItem(70).AlignMiddle().Element(e =>
                             {
                                 if (File.Exists(logoPath))
@@ -54,57 +67,36 @@ namespace Ramza_EBike_Swabi.Services.Pdf
                                     e.Text(string.Empty);
                             });
 
-                            // Shop info — center
                             row.RelativeItem().AlignCenter().AlignMiddle().Column(col =>
                             {
-                                col.Item().AlignCenter()
-                                   .Text(ShopName)
-                                   .FontSize(18).Bold()
-                                   .FontColor(Color.FromHex("1B4079"));
-
-                                col.Item().AlignCenter()
-                                   .Text(ShopNTN)
+                                col.Item().AlignCenter().Text(ShopName)
+                                   .FontSize(18).Bold().FontColor(Color.FromHex("1B4079"));
+                                col.Item().AlignCenter().Text(ShopNTN)
                                    .FontSize(9).FontColor(Color.FromHex("444444"));
-
-                                col.Item().AlignCenter()
-                                   .Text(ShopAddress)
+                                col.Item().AlignCenter().Text(ShopAddress)
                                    .FontSize(9).FontColor(Color.FromHex("444444"));
-
-                                col.Item().AlignCenter()
-                                   .Text($"Phone: {ShopPhone}")
+                                col.Item().AlignCenter().Text($"Phone: {ShopPhone}")
                                    .FontSize(9).FontColor(Color.FromHex("444444"));
                             });
 
-                            // Invoice meta — right
                             row.ConstantItem(185).AlignMiddle().Column(col =>
                             {
-                                col.Item().AlignRight()
-                                   .Text("CUSTOMER INVOICE")
-                                   .FontSize(13).Bold()
-                                   .FontColor(Color.FromHex("1B4079"));
-
+                                col.Item().AlignRight().Text("CUSTOMER INVOICE")
+                                   .FontSize(13).Bold().FontColor(Color.FromHex("1B4079"));
                                 col.Item().PaddingTop(3).AlignRight()
-                                   .Text($"Invoice #: INV-{invoice.CustomerInvoiceId:D4}")
-                                   .FontSize(9);
-
+                                   .Text($"Invoice #: INV-{invoice.CustomerInvoiceId:D4}").FontSize(9);
                                 col.Item().AlignRight()
-                                   .Text($"Date: {invoice.InvoiceDate:dd-MMM-yyyy}")
-                                   .FontSize(9);
-
+                                   .Text($"Date: {invoice.InvoiceDate:dd-MMM-yyyy}").FontSize(9);
                                 col.Item().AlignRight()
                                    .Text($"Payment: {invoice.PaymentMethod ?? "Cash"}")
                                    .FontSize(9).Bold();
 
-                                var statusColor = billStatus == "CLEAR"
-                                    ? Color.FromHex("1B8A3D")
-                                    : billStatus == "PARTIALLY PAID"
-                                        ? Color.FromHex("E67E00")
-                                        : Color.FromHex("C0392B");
-
+                                var statusColor = billStatus == "CLEAR" ? Color.FromHex("1B8A3D")
+                                                : billStatus == "PARTIALLY PAID" ? Color.FromHex("E67E00")
+                                                                                 : Color.FromHex("C0392B");
                                 col.Item().PaddingTop(3).AlignRight()
                                    .Text($"Status: {billStatus}")
-                                   .FontSize(9).Bold()
-                                   .FontColor(statusColor);
+                                   .FontSize(9).Bold().FontColor(statusColor);
                             });
                         });
 
@@ -113,10 +105,10 @@ namespace Ramza_EBike_Swabi.Services.Pdf
                                  .LineColor(Color.FromHex("1B4079"));
                     });
 
-                    // ===== CONTENT =====
+                    // ═══════════════ CONTENT ═══════════════
                     page.Content().PaddingTop(8).Column(col =>
                     {
-                        // Customer + Payment info
+                        // Customer + Payment info row
                         col.Item().Row(row =>
                         {
                             // Customer details
@@ -126,8 +118,7 @@ namespace Ramza_EBike_Swabi.Services.Pdf
                                .Padding(8).Column(c =>
                                {
                                    c.Item().Text("CUSTOMER DETAILS")
-                                    .FontSize(8).Bold()
-                                    .FontColor(Color.FromHex("1B4079"));
+                                    .FontSize(8).Bold().FontColor(Color.FromHex("1B4079"));
 
                                    c.Item().PaddingTop(4).Table(t =>
                                    {
@@ -153,15 +144,14 @@ namespace Ramza_EBike_Swabi.Services.Pdf
 
                             row.ConstantItem(8);
 
-                            // ✅ UPDATED: Payment details — now includes Due Date
+                            // Payment details
                             row.ConstantItem(230).Border(0.5f)
                                .BorderColor(Color.FromHex("CCCCCC"))
                                .Background(Color.FromHex("F0F4FA"))
                                .Padding(8).Column(c =>
                                {
                                    c.Item().Text("PAYMENT DETAILS")
-                                    .FontSize(8).Bold()
-                                    .FontColor(Color.FromHex("1B4079"));
+                                    .FontSize(8).Bold().FontColor(Color.FromHex("1B4079"));
 
                                    c.Item().PaddingTop(4).Table(t =>
                                    {
@@ -174,11 +164,8 @@ namespace Ramza_EBike_Swabi.Services.Pdf
                                        void R(string lbl, string val,
                                            bool bold = false, string? hex = null)
                                        {
-                                           t.Cell().PaddingBottom(2)
-                                            .Text(lbl).Bold().FontSize(9);
-
-                                           var txt = t.Cell().PaddingBottom(2)
-                                            .Text(val).FontSize(9);
+                                           t.Cell().PaddingBottom(2).Text(lbl).Bold().FontSize(9);
+                                           var txt = t.Cell().PaddingBottom(2).Text(val).FontSize(9);
                                            if (bold) txt.Bold();
                                            if (hex != null) txt.FontColor(Color.FromHex(hex));
                                        }
@@ -186,38 +173,48 @@ namespace Ramza_EBike_Swabi.Services.Pdf
                                        R("Payment Method:", invoice.PaymentMethod ?? "Cash");
                                        R("Total Amount:", $"PKR {invoice.TotalAmount:N2}");
                                        R("Discount:", $"PKR {invoice.Discount:N2}");
-                                       R("Net Bill:", $"PKR {invoice.NetBill:N2}",
-                                           bold: true);
-                                       R("Amount Paid:", $"PKR {invoice.AmountPaid:N2}");
+                                       R("Net Bill:", $"PKR {invoice.NetBill:N2}", bold: true);
+
+                                       // ✅ Show Cash + Account paid at invoice creation
+                                       if (invoice.AmountPaidCash > 0 || invoice.AmountPaidAccount > 0)
+                                       {
+                                           if (invoice.AmountPaidCash > 0)
+                                               R("Paid (Cash):", $"PKR {invoice.AmountPaidCash:N2}",
+                                                   hex: "1B8A3D");
+                                           if (invoice.AmountPaidAccount > 0)
+                                               R("Paid (Account):", $"PKR {invoice.AmountPaidAccount:N2}",
+                                                   hex: "1565C0");
+                                       }
+                                       else if (invoice.AmountPaid > 0)
+                                       {
+                                           R("Amount Paid:", $"PKR {invoice.AmountPaid:N2}");
+                                       }
+
                                        R("Remaining:", $"PKR {invoice.RemainingBalance:N2}",
                                            bold: invoice.RemainingBalance > 0,
                                            hex: invoice.RemainingBalance > 0 ? "C0392B" : "1B8A3D");
+
                                        R("Bill Status:", billStatus, bold: true,
                                            hex: billStatus == "CLEAR" ? "1B8A3D"
                                               : billStatus == "PARTIALLY PAID" ? "E67E00"
-                                                                                : "C0392B");
+                                                                               : "C0392B");
 
-                                       // ✅ Due Date row — only shown when set and balance > 0
-                                       if (invoice.DueDate.HasValue &&
-                                           invoice.RemainingBalance > 0)
+                                       if (invoice.DueDate.HasValue && invoice.RemainingBalance > 0)
                                        {
-                                           // Determine color: red if overdue/today, orange if soon
                                            bool isOverdue = invoice.DueDate.Value.Date < DateTime.Today;
                                            bool isDueToday = invoice.DueDate.Value.Date == DateTime.Today;
                                            bool isDueSoon = invoice.DueDate.Value.Date <= DateTime.Today.AddDays(3);
 
                                            string dueDateHex = (isOverdue || isDueToday) ? "C0392B"
-                                                             : isDueSoon ? "E67E00"
-                                                                                         : "1B4079";
-
+                                                               : isDueSoon ? "E67E00"
+                                                                                           : "1B4079";
                                            string dueDateLabel = isOverdue ? "Due Date (OVERDUE):"
                                                                : isDueToday ? "Due Date (TODAY):"
                                                                             : "Due Date:";
 
                                            R(dueDateLabel,
                                              invoice.DueDate.Value.ToString("dd-MMM-yyyy"),
-                                             bold: true,
-                                             hex: dueDateHex);
+                                             bold: true, hex: dueDateHex);
                                        }
                                    });
                                });
@@ -225,12 +222,10 @@ namespace Ramza_EBike_Swabi.Services.Pdf
 
                         col.Item().PaddingTop(8);
 
-                        // Bike items label
+                        // Bike items
                         col.Item().Text("BIKE DETAILS")
-                           .FontSize(8).Bold()
-                           .FontColor(Color.FromHex("1B4079"));
+                           .FontSize(8).Bold().FontColor(Color.FromHex("1B4079"));
 
-                        // Items table
                         col.Item().PaddingTop(3).Border(0.5f)
                            .BorderColor(Color.FromHex("CCCCCC"))
                            .Table(t =>
@@ -253,12 +248,9 @@ namespace Ramza_EBike_Swabi.Services.Pdf
                                t.Header(h =>
                                {
                                    void H(string txt) =>
-                                       h.Cell()
-                                        .Background(Color.FromHex("1B4079"))
-                                        .Padding(5)
-                                        .Text(txt)
-                                        .FontSize(8).Bold()
-                                        .FontColor(Colors.White);
+                                       h.Cell().Background(Color.FromHex("1B4079"))
+                                        .Padding(5).Text(txt)
+                                        .FontSize(8).Bold().FontColor(Colors.White);
 
                                    H("#"); H("Model"); H("Brand"); H("Motor Power");
                                    H("Color"); H("Motor No."); H("Chassis No.");
@@ -276,10 +268,8 @@ namespace Ramza_EBike_Swabi.Services.Pdf
 
                                    void Cell(string val) =>
                                        t.Cell().Background(bg)
-                                        .BorderBottom(0.3f)
-                                        .BorderColor(Color.FromHex("DDDDDD"))
-                                        .Padding(4)
-                                        .Text(val ?? "-").FontSize(9);
+                                        .BorderBottom(0.3f).BorderColor(Color.FromHex("DDDDDD"))
+                                        .Padding(4).Text(val ?? "-").FontSize(9);
 
                                    Cell(idx++.ToString());
                                    Cell(item.Model);
@@ -295,12 +285,75 @@ namespace Ramza_EBike_Swabi.Services.Pdf
                                }
                            });
 
-                        // Total bar
-                        col.Item()
-                           .Background(Color.FromHex("1B4079"))
+                        col.Item().Background(Color.FromHex("1B4079"))
                            .Padding(5).AlignRight()
                            .Text($"TOTAL AMOUNT:  PKR {invoice.TotalAmount:N2}")
                            .FontSize(10).Bold().FontColor(Colors.White);
+
+                        // ✅ Issue 4: Payment History section
+                        if (paymentHistory.Count > 0)
+                        {
+                            col.Item().PaddingTop(8);
+                            col.Item().Text("PAYMENT HISTORY")
+                               .FontSize(8).Bold().FontColor(Color.FromHex("1B4079"));
+
+                            col.Item().PaddingTop(3).Border(0.5f)
+                               .BorderColor(Color.FromHex("CCCCCC"))
+                               .Table(t =>
+                               {
+                                   t.ColumnsDefinition(c =>
+                                   {
+                                       c.ConstantColumn(22);  // #
+                                       c.RelativeColumn(2f);  // Date
+                                       c.RelativeColumn(2f);  // Cash
+                                       c.RelativeColumn(2f);  // Account
+                                       c.RelativeColumn(2f);  // Total
+                                       c.RelativeColumn(2f);  // Remaining
+                                       c.RelativeColumn(2f);  // Method
+                                       c.RelativeColumn(2f);  // Received By
+                                   });
+
+                                   t.Header(h =>
+                                   {
+                                       void H(string txt) =>
+                                           h.Cell().Background(Color.FromHex("2E7D32"))
+                                            .Padding(5).Text(txt)
+                                            .FontSize(8).Bold().FontColor(Colors.White);
+
+                                       H("#"); H("Date"); H("Cash (PKR)");
+                                       H("Account (PKR)"); H("Total (PKR)");
+                                       H("Remaining (PKR)"); H("Method"); H("Received By");
+                                   });
+
+                                   int i = 1;
+                                   bool alt = false;
+                                   foreach (var ph in paymentHistory)
+                                   {
+                                       var bg = alt ? Color.FromHex("F0FFF4") : Colors.White;
+                                       alt = !alt;
+
+                                       void PC(string val, bool bold = false, string? hex = null)
+                                       {
+                                           var txt = t.Cell().Background(bg)
+                                               .BorderBottom(0.3f).BorderColor(Color.FromHex("DDDDDD"))
+                                               .Padding(4).Text(val ?? "-").FontSize(8.5f);
+                                           if (bold) txt.Bold();
+                                           if (hex != null) txt.FontColor(Color.FromHex(hex));
+                                       }
+
+                                       PC(i++.ToString());
+                                       PC(ph.PaymentDate.ToString("dd-MMM-yyyy"));
+                                       PC(ph.AmountPaidCash > 0 ? ph.AmountPaidCash.ToString("N0") : "-", hex: "1B8A3D");
+                                       PC(ph.AmountPaidAccount > 0 ? ph.AmountPaidAccount.ToString("N0") : "-", hex: "1565C0");
+                                       PC(ph.AmountPaid.ToString("N0"), bold: true);
+                                       PC(ph.RemainingAfter.ToString("N0"),
+                                           bold: ph.RemainingAfter > 0,
+                                           hex: ph.RemainingAfter > 0 ? "C0392B" : "1B8A3D");
+                                       PC(ph.PaymentMethod);
+                                       PC(ph.ReceivedBy);
+                                   }
+                               });
+                        }
 
                         col.Item().PaddingTop(8);
 
@@ -312,12 +365,10 @@ namespace Ramza_EBike_Swabi.Services.Pdf
                                .Padding(8).Column(c =>
                                {
                                    c.Item().Text("REMARKS")
-                                    .FontSize(8).Bold()
-                                    .FontColor(Color.FromHex("1B4079"));
+                                    .FontSize(8).Bold().FontColor(Color.FromHex("1B4079"));
                                    c.Item().PaddingTop(3)
                                     .Text(string.IsNullOrWhiteSpace(invoice.Remarks)
-                                        ? "-" : invoice.Remarks)
-                                    .FontSize(9);
+                                        ? "-" : invoice.Remarks).FontSize(9);
                                });
 
                             row.ConstantItem(8);
@@ -327,8 +378,7 @@ namespace Ramza_EBike_Swabi.Services.Pdf
                                .Padding(8).Column(c =>
                                {
                                    c.Item().Text("CHECKLIST")
-                                    .FontSize(8).Bold()
-                                    .FontColor(Color.FromHex("1B4079"));
+                                    .FontSize(8).Bold().FontColor(Color.FromHex("1B4079"));
 
                                    void Check(string label, bool ticked)
                                    {
@@ -340,7 +390,6 @@ namespace Ramza_EBike_Swabi.Services.Pdf
                                             .Text(ticked ? "v" : " ")
                                             .FontSize(8).Bold()
                                             .FontColor(Color.FromHex("1B4079"));
-
                                            r.RelativeItem().PaddingLeft(4)
                                             .Text(label).FontSize(9);
                                        });
@@ -359,25 +408,20 @@ namespace Ramza_EBike_Swabi.Services.Pdf
                         {
                             row.RelativeItem().AlignCenter().Column(c =>
                             {
-                                c.Item().AlignCenter()
-                                 .Text("________________________________");
-                                c.Item().AlignCenter()
-                                 .Text("Customer Signature")
+                                c.Item().AlignCenter().Text("________________________________");
+                                c.Item().AlignCenter().Text("Customer Signature")
                                  .FontSize(9).FontColor(Color.FromHex("555555"));
                             });
-
                             row.RelativeItem().AlignCenter().Column(c =>
                             {
-                                c.Item().AlignCenter()
-                                 .Text("________________________________");
-                                c.Item().AlignCenter()
-                                 .Text("Authorized Signature")
+                                c.Item().AlignCenter().Text("________________________________");
+                                c.Item().AlignCenter().Text("Authorized Signature")
                                  .FontSize(9).FontColor(Color.FromHex("555555"));
                             });
                         });
                     });
 
-                    // ===== FOOTER =====
+                    // ═══════════════ FOOTER ═══════════════
                     page.Footer().AlignCenter().Text(t =>
                     {
                         t.Span("Thank you for your purchase!  —  ")
