@@ -102,14 +102,13 @@ namespace Ramza_EBike_Swabi.Views.Pages
             CNIC = txtCNIC?.Text ?? string.Empty,
             Address = txtAddress?.Text ?? string.Empty,
             Discount = txtDiscount?.Text ?? string.Empty,
-            Paid = txtPaid?.Text ?? string.Empty,
-            Remarks = txtRemarks?.Text ?? string.Empty,
-            IsCash = rbCash?.IsChecked == true,
+            Paid = txtPaidCash?.Text ?? string.Empty,
             AccountDetail = txtAccountDetail?.Text ?? string.Empty,
+            Remarks = txtRemarks?.Text ?? string.Empty,
+            IsCash = true,
             WarrantyCardGiven = chkWarrantyCard?.IsChecked == true,
             VoucherGivenToCustomer = chkVoucherCustomer?.IsChecked == true,
             VoucherIssuedByCompany = chkVoucherCompany?.IsChecked == true,
-            // ✅ NEW
             DueDate = dpDueDate?.SelectedDate,
             Items = BillItems
                 .Where(i => !string.IsNullOrWhiteSpace(i.MotorNumber))
@@ -138,18 +137,13 @@ namespace Ramza_EBike_Swabi.Views.Pages
             txtCNIC.Text = data.CNIC;
             txtAddress.Text = data.Address;
             txtDiscount.Text = data.Discount;
-            txtPaid.Text = data.Paid;
+            if (txtPaidCash != null) txtPaidCash.Text = data.Paid;
+            if (txtPaidAccount != null) txtPaidAccount.Text = string.Empty;
             if (txtRemarks != null) txtRemarks.Text = data.Remarks;
             if (txtAccountDetail != null) txtAccountDetail.Text = data.AccountDetail;
-            if (rbCash != null) rbCash.IsChecked = data.IsCash;
-            if (rbAccount != null) rbAccount.IsChecked = !data.IsCash;
-            if (pnlAccountDetail != null)
-                pnlAccountDetail.Visibility = data.IsCash
-                    ? Visibility.Collapsed : Visibility.Visible;
             if (chkWarrantyCard != null) chkWarrantyCard.IsChecked = data.WarrantyCardGiven;
             if (chkVoucherCustomer != null) chkVoucherCustomer.IsChecked = data.VoucherGivenToCustomer;
             if (chkVoucherCompany != null) chkVoucherCompany.IsChecked = data.VoucherIssuedByCompany;
-            // ✅ NEW
             if (dpDueDate != null) dpDueDate.SelectedDate = data.DueDate;
 
             BillItems.Clear();
@@ -208,9 +202,7 @@ namespace Ramza_EBike_Swabi.Views.Pages
             if (!_suppressDirty) ScheduleAutoSave();
         }
 
-        // ✅ NEW — due date picker changed
-        private void DpDueDate_Changed(object sender,
-            SelectionChangedEventArgs e)
+        private void DpDueDate_Changed(object sender, SelectionChangedEventArgs e)
         {
             if (!_suppressDirty) ScheduleAutoSave();
         }
@@ -226,9 +218,25 @@ namespace Ramza_EBike_Swabi.Views.Pages
             txtCNIC.Text = invoice.Customer?.CNIC ?? string.Empty;
             txtAddress.Text = invoice.Customer?.Address ?? string.Empty;
             txtDiscount.Text = invoice.Discount.ToString("N2");
-            txtPaid.Text = invoice.AmountPaid.ToString("N2");
+
+            // ✅ Backward compatible:
+            // Purane bills mein AmountPaidCash=0, AmountPaidAccount=0 hoga
+            // Us case mein AmountPaid ko Cash field mein show karo
+            bool isLegacyBill = invoice.AmountPaidCash == 0 &&
+                                 invoice.AmountPaidAccount == 0 &&
+                                 invoice.AmountPaid > 0;
+
+            if (txtPaidCash != null)
+                txtPaidCash.Text = isLegacyBill
+                    ? invoice.AmountPaid.ToString("N2")        // purana bill
+                    : invoice.AmountPaidCash.ToString("N2");   // naya bill
+
+            if (txtPaidAccount != null)
+                txtPaidAccount.Text = isLegacyBill
+                    ? "0"                                          // purana bill
+                    : invoice.AmountPaidAccount.ToString("N2");   // naya bill
+
             if (txtRemarks != null) txtRemarks.Text = invoice.Remarks ?? string.Empty;
-            // ✅ NEW
             if (dpDueDate != null) dpDueDate.SelectedDate = invoice.DueDate;
 
             chkWarrantyCard.IsChecked = invoice.WarrantyCardGiven;
@@ -244,15 +252,6 @@ namespace Ramza_EBike_Swabi.Views.Pages
             Recalculate(null, null);
             _suppressDirty = false;
             _isDirty = false;
-        }
-
-        // ================== PAYMENT METHOD ==================
-        private void PaymentMethod_Changed(object sender, RoutedEventArgs e)
-        {
-            if (pnlAccountDetail == null) return;
-            pnlAccountDetail.Visibility = rbAccount?.IsChecked == true
-                ? Visibility.Visible : Visibility.Collapsed;
-            ScheduleAutoSave();
         }
 
         // ================== MOTOR AUTOCOMPLETE ==================
@@ -361,12 +360,16 @@ namespace Ramza_EBike_Swabi.Views.Pages
                     .Where(i => !string.IsNullOrWhiteSpace(i.MotorNumber))
                     .Sum(i => i.TotalPrice);
                 decimal discount = decimal.TryParse(txtDiscount?.Text, out var d) ? d : 0;
-                decimal paid = decimal.TryParse(txtPaid?.Text, out var p) ? p : 0;
+                decimal paidCash = decimal.TryParse(txtPaidCash?.Text, out var pc) ? pc : 0;
+                decimal paidAccount = decimal.TryParse(txtPaidAccount?.Text, out var pa) ? pa : 0;
+                decimal totalPaid = paidCash + paidAccount;
                 decimal net = total - discount;
-                decimal remaining = net - paid;
+                decimal remaining = net - totalPaid;
 
                 if (txtTotal != null) txtTotal.Text = total.ToString("N2");
                 if (txtNetBill != null) txtNetBill.Text = net.ToString("N2");
+                if (txtCashPaidDisplay != null) txtCashPaidDisplay.Text = paidCash.ToString("N2");
+                if (txtAccountPaidDisplay != null) txtAccountPaidDisplay.Text = paidAccount.ToString("N2");
                 if (txtRemaining != null) txtRemaining.Text = remaining.ToString("N2");
             }
             catch { }
@@ -427,34 +430,48 @@ namespace Ramza_EBike_Swabi.Views.Pages
                 }
 
                 Recalculate(null, null);
-                decimal.TryParse(txtPaid?.Text, out decimal newPaid);
+
+                decimal.TryParse(txtPaidCash?.Text, out decimal newPaidCash);
+                decimal.TryParse(txtPaidAccount?.Text, out decimal newPaidAccount);
+                decimal newPaidTotal = newPaidCash + newPaidAccount;
+
                 bool isEdit = _editingInvoice != null;
 
-                decimal oldPaid = 0m;
-                string oldPaymentMethod = "Cash";
+                // ✅ Edit mode: purane Cash + Account amounts fetch karo
+                // Backward compatible: purane bills mein sirf AmountPaid hoga
+                decimal oldPaidCash = 0m;
+                decimal oldPaidAccount = 0m;
                 if (isEdit && _editingInvoice != null)
                 {
-                    oldPaid = await _invoiceService
-                        .GetOldPaidAmountAsync(_editingInvoice.CustomerInvoiceId);
-                    oldPaymentMethod = await _invoiceService
-                        .GetOldPaymentMethodAsync(_editingInvoice.CustomerInvoiceId);
+                    bool legacy = _editingInvoice.AmountPaidCash == 0 &&
+                                  _editingInvoice.AmountPaidAccount == 0 &&
+                                  _editingInvoice.AmountPaid > 0;
+
+                    // Purana bill: pura AmountPaid cash mein treat karo
+                    oldPaidCash = legacy ? _editingInvoice.AmountPaid : _editingInvoice.AmountPaidCash;
+                    oldPaidAccount = legacy ? 0m : _editingInvoice.AmountPaidAccount;
                 }
 
-                var invoice = BuildInvoiceObject(validItems);
+                var invoice = BuildInvoiceObject(validItems, newPaidCash, newPaidAccount);
                 bool success;
 
                 if (!isEdit)
                 {
                     success = await _invoiceService.AddInvoiceAsync(invoice, validItems);
 
-                    if (success && newPaid > 0)
+                    if (success)
                     {
                         string invoiceRef = $"INV-{invoice.CustomerInvoiceId:D4}";
-                        await _accountService.RecordInvoicePaymentAsync(
-                             newPaid,
-    txtName.Text.Trim(),   // ✅ customerName pass ho raha hai
-    invoiceRef,             // ✅ INV-XXXX pass ho raha hai
-    isCash: rbCash?.IsChecked == true);
+                        string customerName = txtName.Text.Trim();
+
+                        // ✅ Cash aur Account alag alag transactions
+                        if (newPaidCash > 0)
+                            await _accountService.RecordInvoicePaymentAsync(
+                                newPaidCash, customerName, invoiceRef, isCash: true);
+
+                        if (newPaidAccount > 0)
+                            await _accountService.RecordInvoicePaymentAsync(
+                                newPaidAccount, customerName, invoiceRef, isCash: false);
                     }
                 }
                 else
@@ -465,9 +482,19 @@ namespace Ramza_EBike_Swabi.Views.Pages
                     if (success)
                     {
                         string invoiceRef = $"INV-{invoice.CustomerInvoiceId:D4}";
-                        bool isCash = rbCash?.IsChecked == true;
-                        await _accountService.RecordInvoicePaymentEditAsync(
-                            oldPaid, newPaid, txtName.Text.Trim(), invoiceRef, isCash: isCash);
+                        string customerName = txtName.Text.Trim();
+
+                        // ✅ Cash difference — purana vs naya
+                        if (newPaidCash != oldPaidCash)
+                            await _accountService.RecordInvoicePaymentEditAsync(
+                                oldPaidCash, newPaidCash,
+                                customerName, invoiceRef, isCash: true);
+
+                        // ✅ Account difference — purana vs naya
+                        if (newPaidAccount != oldPaidAccount)
+                            await _accountService.RecordInvoicePaymentEditAsync(
+                                oldPaidAccount, newPaidAccount,
+                                customerName, invoiceRef, isCash: false);
                     }
                 }
 
@@ -505,19 +532,33 @@ namespace Ramza_EBike_Swabi.Views.Pages
         }
 
         // ================== BUILD INVOICE ==================
-        private CustomerInvoice BuildInvoiceObject(List<CustomerInvoiceItem> validItems)
+        private CustomerInvoice BuildInvoiceObject(
+            List<CustomerInvoiceItem> validItems,
+            decimal paidCash = 0m,
+            decimal paidAccount = 0m)
         {
             decimal.TryParse(txtDiscount?.Text, out var discount);
-            decimal.TryParse(txtPaid?.Text, out var paid);
+
+            // Agar directly call kiya bina params ke — fields se read karo
+            if (paidCash == 0 && paidAccount == 0)
+            {
+                decimal.TryParse(txtPaidCash?.Text, out paidCash);
+                decimal.TryParse(txtPaidAccount?.Text, out paidAccount);
+            }
+
+            decimal paid = paidCash + paidAccount;
+
             decimal.TryParse(
                 txtNetBill?.Text?.Replace(",", "").Replace("PKR", "").Trim() ?? "0",
                 out decimal net);
 
             decimal remaining = net - paid;
-            string paymentMethod = rbCash?.IsChecked == true ? "Cash" : "Account";
-            string? accountDetail = rbAccount?.IsChecked == true
-                ? txtAccountDetail?.Text?.Trim() : null;
 
+            string paymentMethod = (paidCash > 0 && paidAccount > 0) ? "Cash + Account"
+                                 : paidAccount > 0 ? "Account"
+                                                                       : "Cash";
+
+            string? accountDetail = txtAccountDetail?.Text?.Trim();
             string remarks = txtRemarks?.Text?.Trim() ?? string.Empty;
             if (!string.IsNullOrWhiteSpace(accountDetail))
                 remarks = string.IsNullOrWhiteSpace(remarks)
@@ -535,17 +576,19 @@ namespace Ramza_EBike_Swabi.Views.Pages
                     Address = txtAddress?.Text?.Trim() ?? string.Empty
                 },
                 InvoiceDate = DateTime.Now,
-                // ✅ NEW
                 DueDate = dpDueDate?.SelectedDate,
                 Items = validItems,
                 TotalAmount = validItems.Sum(i => i.TotalPrice),
                 Discount = discount,
                 NetBill = net,
+                // ✅ Tino fields set karo
                 AmountPaid = paid,
+                AmountPaidCash = paidCash,
+                AmountPaidAccount = paidAccount,
                 RemainingBalance = remaining,
                 Status = remaining <= 0 ? "Clear"
-                                       : paid == 0 ? "Unpaid"
-                                                   : "Partially Paid",
+                       : paid == 0 ? "Unpaid"
+                                       : "Partially Paid",
                 PaymentMethod = paymentMethod,
                 Remarks = remarks,
                 WarrantyCardGiven = chkWarrantyCard?.IsChecked == true,
@@ -565,14 +608,10 @@ namespace Ramza_EBike_Swabi.Views.Pages
             txtName?.Clear(); txtFName?.Clear();
             txtContact?.Clear(); txtCNIC?.Clear();
             txtAddress?.Clear(); txtDiscount?.Clear();
-            txtPaid?.Clear(); txtRemarks?.Clear();
-            txtAccountDetail?.Clear();
+            txtPaidCash?.Clear(); txtPaidAccount?.Clear();
+            txtRemarks?.Clear(); txtAccountDetail?.Clear();
 
-            // ✅ NEW
             if (dpDueDate != null) dpDueDate.SelectedDate = null;
-
-            if (rbCash != null) rbCash.IsChecked = true;
-            if (pnlAccountDetail != null) pnlAccountDetail.Visibility = Visibility.Collapsed;
             if (chkWarrantyCard != null) chkWarrantyCard.IsChecked = false;
             if (chkVoucherCustomer != null) chkVoucherCustomer.IsChecked = false;
             if (chkVoucherCompany != null) chkVoucherCompany.IsChecked = false;
