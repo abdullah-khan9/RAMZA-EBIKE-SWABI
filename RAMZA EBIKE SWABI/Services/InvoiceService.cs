@@ -71,6 +71,8 @@ namespace Ramza_EBike_Swabi.Services
             existing.Discount = updatedInvoice.Discount;
             existing.NetBill = updatedInvoice.NetBill;
             existing.AmountPaid = updatedInvoice.AmountPaid;
+            existing.AmountPaidCash = updatedInvoice.AmountPaidCash;    // ✅ NEW
+            existing.AmountPaidAccount = updatedInvoice.AmountPaidAccount; // ✅ NEW
             existing.RemainingBalance = updatedInvoice.RemainingBalance;
             existing.Status = updatedInvoice.Status;
             existing.PaymentMethod = updatedInvoice.PaymentMethod;
