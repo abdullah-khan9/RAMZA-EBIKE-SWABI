@@ -1,0 +1,84 @@
+﻿<Window x:Class="Ramza_EBike_Swabi.Views.Pages.EditPaymentWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Edit Payment"
+        Width="400" Height="520"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        Background="#F5F6FA">
+
+    <Border Margin="20" Background="White" CornerRadius="10">
+        <Border.Effect>
+            <DropShadowEffect Color="#000000" BlurRadius="14"
+                              ShadowDepth="2" Opacity="0.15"/>
+        </Border.Effect>
+        <StackPanel Margin="24">
+
+            <TextBlock Text="Edit Payment"
+                       FontSize="18" FontWeight="Bold"
+                       Foreground="#2C3E50" Margin="0 0 0 20"/>
+
+            <!-- Cash Amount -->
+            <Border Background="#E8F5E9" BorderBrush="#A5D6A7"
+                    BorderThickness="1.5" CornerRadius="8"
+                    Padding="12 10" Margin="0 0 0 10">
+                <StackPanel>
+                    <TextBlock Text="💵  Cash Amount (PKR)"
+                               FontWeight="Bold" Foreground="#2E7D32"
+                               FontSize="13" Margin="0 0 0 8"/>
+                    <TextBox x:Name="txtCashAmount"
+                             Height="34" Padding="8 0"
+                             VerticalContentAlignment="Center"
+                             FontSize="13" BorderBrush="#CCC"
+                             BorderThickness="1" Background="White"/>
+                </StackPanel>
+            </Border>
+
+            <!-- Account Amount -->
+            <Border Background="#E3F2FD" BorderBrush="#90CAF9"
+                    BorderThickness="1.5" CornerRadius="8"
+                    Padding="12 10" Margin="0 0 0 14">
+                <StackPanel>
+                    <TextBlock Text="🏦  Account Amount (PKR)"
+                               FontWeight="Bold" Foreground="#1565C0"
+                               FontSize="13" Margin="0 0 0 8"/>
+                    <TextBox x:Name="txtAccountAmount"
+                             Height="34" Padding="8 0"
+                             VerticalContentAlignment="Center"
+                             FontSize="13" BorderBrush="#CCC"
+                             BorderThickness="1" Background="White"/>
+                </StackPanel>
+            </Border>
+
+            <!-- Received By -->
+            <TextBlock Text="Received By *"
+                       FontSize="13" Foreground="#555" Margin="0 0 0 4"/>
+            <TextBox x:Name="txtReceivedBy"
+                     Height="34" Padding="8 0"
+                     VerticalContentAlignment="Center"
+                     FontSize="13" BorderBrush="#CCC"
+                     BorderThickness="1" Margin="0 0 0 12"/>
+
+            <!-- Date -->
+            <TextBlock Text="Date" FontSize="13"
+                       Foreground="#555" Margin="0 0 0 4"/>
+            <DatePicker x:Name="dpDate" Height="34"
+                        FontSize="13" Margin="0 0 0 24"/>
+
+            <!-- Buttons -->
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Content="Cancel"
+                        Width="90" Height="36"
+                        Background="#BDC3C7" Foreground="White"
+                        BorderThickness="0" Margin="0 0 10 0"
+                        Click="Cancel_Click"/>
+                <Button Content="Save Changes"
+                        Width="130" Height="36"
+                        Background="#3498DB" Foreground="White"
+                        FontWeight="Bold" BorderThickness="0"
+                        Click="Save_Click"/>
+            </StackPanel>
+
+        </StackPanel>
+    </Border>
+</Window>
