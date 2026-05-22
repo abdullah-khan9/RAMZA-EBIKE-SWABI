@@ -14,25 +14,40 @@ namespace Ramza_EBike_Swabi.Models
         public Customer Customer { get; set; } = null!;
         public DateTime InvoiceDate { get; set; } = DateTime.Now;
 
-        // ✅ NEW — optional due date set by shopkeeper
+        // Optional due date
         public DateTime? DueDate { get; set; }
 
         [Column(TypeName = "decimal(18,2)")]
         public decimal TotalAmount { get; set; }
+
         [Column(TypeName = "decimal(18,2)")]
         public decimal Discount { get; set; }
+
         [Column(TypeName = "decimal(18,2)")]
         public decimal NetBill { get; set; }
+
+        // ✅ Total paid (Cash + Account) — purana field, abhi bhi use hota hai
         [Column(TypeName = "decimal(18,2)")]
         public decimal AmountPaid { get; set; }
+
+        // ✅ NEW — Cash aur Account alag alag store
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal AmountPaidCash { get; set; } = 0;
+
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal AmountPaidAccount { get; set; } = 0;
+
         [Column(TypeName = "decimal(18,2)")]
         public decimal RemainingBalance { get; set; }
+
         public bool WarrantyCardGiven { get; set; }
         public bool VoucherGivenToCustomer { get; set; }
         public bool VoucherIssuedByCompany { get; set; }
+
         public string Status { get; set; } = "Pending";
         public string PaymentMethod { get; set; } = "Cash";
         public string? Remarks { get; set; }
+
         public ICollection<CustomerInvoiceItem> Items { get; set; } = new List<CustomerInvoiceItem>();
     }
 }
