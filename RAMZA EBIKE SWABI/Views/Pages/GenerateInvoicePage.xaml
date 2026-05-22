@@ -1,73 +1,265 @@
-﻿<!-- GenerateInvoicePage.xaml -->
+﻿<!-- GenerateInvoicePage.xaml — Modern Professional Invoice UI -->
 <Page x:Class="Ramza_EBike_Swabi.Views.Pages.GenerateInvoicePage"
       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-      Background="#F4F6F9"
+      Background="#F0F4F8"
       Title="Generate Invoice">
 
-    <ScrollViewer VerticalScrollBarVisibility="Auto">
-        <Grid Margin="16">
+    <Page.Resources>
 
+        <!-- ── Colors ── -->
+        <SolidColorBrush x:Key="PrimaryBrush"      Color="#1A3C5E"/>
+        <SolidColorBrush x:Key="AccentBrush"       Color="#2563EB"/>
+        <SolidColorBrush x:Key="SuccessBrush"      Color="#16A34A"/>
+        <SolidColorBrush x:Key="DangerBrush"       Color="#DC2626"/>
+        <SolidColorBrush x:Key="WarningBrush"      Color="#D97706"/>
+        <SolidColorBrush x:Key="CardBg"            Color="#FFFFFF"/>
+        <SolidColorBrush x:Key="InputBg"           Color="#F8FAFC"/>
+        <SolidColorBrush x:Key="BorderLight"       Color="#E2E8F0"/>
+        <SolidColorBrush x:Key="LabelColor"        Color="#64748B"/>
+        <SolidColorBrush x:Key="HeaderColor"       Color="#0F172A"/>
+
+        <!-- ── Label Style ── -->
+        <Style x:Key="FieldLabel" TargetType="TextBlock">
+            <Setter Property="FontSize"     Value="11"/>
+            <Setter Property="FontWeight"   Value="SemiBold"/>
+            <Setter Property="Foreground"   Value="{StaticResource LabelColor}"/>
+            <Setter Property="Margin"       Value="0 0 0 4"/>
+            <Setter Property="TextOptions.TextFormattingMode" Value="Display"/>
+        </Style>
+
+        <!-- ── TextBox Style ── -->
+        <Style x:Key="ModernInput" TargetType="TextBox">
+            <Setter Property="Height"                   Value="36"/>
+            <Setter Property="Padding"                  Value="10 0"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="FontSize"                 Value="13"/>
+            <Setter Property="Background"               Value="{StaticResource InputBg}"/>
+            <Setter Property="BorderBrush"              Value="{StaticResource BorderLight}"/>
+            <Setter Property="BorderThickness"          Value="1.5"/>
+            <Setter Property="Foreground"               Value="{StaticResource HeaderColor}"/>
+            <Style.Triggers>
+                <Trigger Property="IsFocused" Value="True">
+                    <Setter Property="BorderBrush" Value="{StaticResource AccentBrush}"/>
+                    <Setter Property="Background"  Value="White"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- ── Section Header ── -->
+        <Style x:Key="SectionHeader" TargetType="TextBlock">
+            <Setter Property="FontSize"   Value="13"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Foreground" Value="{StaticResource PrimaryBrush}"/>
+        </Style>
+
+        <!-- ── Primary Button ── -->
+        <Style x:Key="PrimaryBtn" TargetType="Button">
+            <Setter Property="Height"           Value="42"/>
+            <Setter Property="FontSize"         Value="13"/>
+            <Setter Property="FontWeight"       Value="Bold"/>
+            <Setter Property="Foreground"       Value="White"/>
+            <Setter Property="BorderThickness"  Value="0"/>
+            <Setter Property="Cursor"           Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}"
+                                CornerRadius="8" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- ── DataGrid Style ── -->
+        <Style x:Key="InvoiceGrid" TargetType="DataGrid">
+            <Setter Property="AutoGenerateColumns"          Value="False"/>
+            <Setter Property="CanUserAddRows"               Value="False"/>
+            <Setter Property="CanUserDeleteRows"            Value="False"/>
+            <Setter Property="RowHeight"                    Value="38"/>
+            <Setter Property="FontSize"                     Value="12.5"/>
+            <Setter Property="GridLinesVisibility"          Value="Horizontal"/>
+            <Setter Property="HorizontalGridLinesBrush"     Value="#EEF2F7"/>
+            <Setter Property="BorderThickness"              Value="0"/>
+            <Setter Property="Background"                   Value="Transparent"/>
+            <Setter Property="RowBackground"                Value="White"/>
+            <Setter Property="AlternatingRowBackground"     Value="#F8FAFC"/>
+            <Setter Property="HeadersVisibility"            Value="Column"/>
+            <Setter Property="SelectionMode"                Value="Single"/>
+            <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Auto"/>
+        </Style>
+
+        <!-- DataGrid Header Style -->
+        <Style TargetType="DataGridColumnHeader">
+            <Setter Property="Background"   Value="#1A3C5E"/>
+            <Setter Property="Foreground"   Value="White"/>
+            <Setter Property="FontSize"     Value="11.5"/>
+            <Setter Property="FontWeight"   Value="SemiBold"/>
+            <Setter Property="Padding"      Value="10 0"/>
+            <Setter Property="Height"       Value="36"/>
+            <Setter Property="BorderBrush"  Value="#2A4C6E"/>
+            <Setter Property="BorderThickness" Value="0 0 1 0"/>
+        </Style>
+
+    </Page.Resources>
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto"
+                  HorizontalScrollBarVisibility="Disabled">
+        <Grid Margin="20 16 20 20">
             <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
 
-            <!-- CUSTOMER DETAILS -->
+            <!-- ══════════════════════════════════════
+                 PAGE HEADER
+            ══════════════════════════════════════ -->
             <Border Grid.Row="0"
-                    Background="White" CornerRadius="10"
-                    Padding="15" Margin="0 0 0 12">
-                <StackPanel>
-                    <TextBlock Text="Customer Details"
-                               FontSize="16" FontWeight="Bold" Margin="0 0 0 10"/>
-                    <UniformGrid Columns="5">
-                        <StackPanel Margin="0 0 8 0">
-                            <TextBlock Text="Name *"/>
-                            <TextBox x:Name="txtName" TextChanged="MarkDirty"/>
-                        </StackPanel>
-                        <StackPanel Margin="0 0 8 0">
-                            <TextBlock Text="Father Name"/>
-                            <TextBox x:Name="txtFName" TextChanged="MarkDirty"/>
-                        </StackPanel>
-                        <StackPanel Margin="0 0 8 0">
-                            <TextBlock Text="Contact *"/>
-                            <TextBox x:Name="txtContact" TextChanged="MarkDirty"/>
-                        </StackPanel>
-                        <StackPanel Margin="0 0 8 0">
-                            <TextBlock Text="CNIC"/>
-                            <TextBox x:Name="txtCNIC" TextChanged="MarkDirty"/>
-                        </StackPanel>
+                    Background="#1A3C5E"
+                    CornerRadius="12"
+                    Padding="20 14"
+                    Margin="0 0 0 14">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                        <TextBlock Text="🧾" FontSize="22" VerticalAlignment="Center" Margin="0 0 10 0"/>
                         <StackPanel>
-                            <TextBlock Text="Address"/>
-                            <TextBox x:Name="txtAddress" TextChanged="MarkDirty"/>
+                            <TextBlock Text="Generate Invoice"
+                                       FontSize="20" FontWeight="Bold"
+                                       Foreground="White"/>
+                            <TextBlock Text="Create a new customer invoice"
+                                       FontSize="11" Foreground="#94A3B8" Margin="0 2 0 0"/>
                         </StackPanel>
-                    </UniformGrid>
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                        <Button Content="🖨  Print Invoice"
+                                Style="{StaticResource PrimaryBtn}"
+                                Background="#2563EB"
+                                Width="145" Padding="0"
+                                Margin="0 0 10 0"
+                                Click="BtnPrintInvoice_Click"/>
+                        <Button Content="💾  Save Invoice"
+                                Style="{StaticResource PrimaryBtn}"
+                                Background="#16A34A"
+                                Width="145" Padding="0"
+                                Click="BtnSaveInvoice_Click"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- ══════════════════════════════════════
+                 CUSTOMER DETAILS
+            ══════════════════════════════════════ -->
+            <Border Grid.Row="1"
+                    Background="White"
+                    CornerRadius="12"
+                    Padding="18 16"
+                    Margin="0 0 0 14">
+                <Border.Effect>
+                    <DropShadowEffect BlurRadius="12" ShadowDepth="2"
+                                      Color="#CBD5E1" Opacity="0.35" Direction="270"/>
+                </Border.Effect>
+                <StackPanel>
+                    <!-- Section Header -->
+                    <StackPanel Orientation="Horizontal" Margin="0 0 0 14">
+                        <Border Background="#EFF6FF" CornerRadius="6"
+                                Padding="8 4" Margin="0 0 10 0">
+                            <TextBlock Text="👤" FontSize="14"/>
+                        </Border>
+                        <TextBlock Text="CUSTOMER DETAILS"
+                                   Style="{StaticResource SectionHeader}"
+                                   VerticalAlignment="Center"/>
+                    </StackPanel>
+
+                    <!-- 5 Fields -->
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="12"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="12"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="12"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="12"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Text="CUSTOMER NAME *" Style="{StaticResource FieldLabel}"/>
+                            <TextBox x:Name="txtName" Style="{StaticResource ModernInput}"
+                                     TextChanged="MarkDirty"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="2">
+                            <TextBlock Text="FATHER NAME" Style="{StaticResource FieldLabel}"/>
+                            <TextBox x:Name="txtFName" Style="{StaticResource ModernInput}"
+                                     TextChanged="MarkDirty"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="4">
+                            <TextBlock Text="CONTACT *" Style="{StaticResource FieldLabel}"/>
+                            <TextBox x:Name="txtContact" Style="{StaticResource ModernInput}"
+                                     TextChanged="MarkDirty"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="6">
+                            <TextBlock Text="CNIC" Style="{StaticResource FieldLabel}"/>
+                            <TextBox x:Name="txtCNIC" Style="{StaticResource ModernInput}"
+                                     TextChanged="MarkDirty"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="8">
+                            <TextBlock Text="ADDRESS" Style="{StaticResource FieldLabel}"/>
+                            <TextBox x:Name="txtAddress" Style="{StaticResource ModernInput}"
+                                     TextChanged="MarkDirty"/>
+                        </StackPanel>
+                    </Grid>
                 </StackPanel>
             </Border>
 
-            <!-- BIKE ITEMS TABLE -->
-            <Border Grid.Row="1"
-                    Background="White" CornerRadius="10"
-                    Padding="15" Margin="0 0 0 12">
+            <!-- ══════════════════════════════════════
+                 BIKE ITEMS TABLE
+            ══════════════════════════════════════ -->
+            <Border Grid.Row="2"
+                    Background="White"
+                    CornerRadius="12"
+                    Padding="18 16"
+                    Margin="0 0 0 14">
+                <Border.Effect>
+                    <DropShadowEffect BlurRadius="12" ShadowDepth="2"
+                                      Color="#CBD5E1" Opacity="0.35" Direction="270"/>
+                </Border.Effect>
                 <StackPanel>
-                    <TextBlock Text="Bike Items"
-                               FontSize="16" FontWeight="Bold" Margin="0 0 0 10"/>
+                    <StackPanel Orientation="Horizontal" Margin="0 0 0 14">
+                        <Border Background="#F0FDF4" CornerRadius="6"
+                                Padding="8 4" Margin="0 0 10 0">
+                            <TextBlock Text="🚲" FontSize="14"/>
+                        </Border>
+                        <TextBlock Text="BIKE ITEMS"
+                                   Style="{StaticResource SectionHeader}"
+                                   VerticalAlignment="Center"/>
+                        <TextBlock Text="  — Enter Motor Number to add a bike. New row appears automatically."
+                                   FontSize="11" Foreground="#94A3B8"
+                                   VerticalAlignment="Center" Margin="4 0 0 0"/>
+                    </StackPanel>
 
                     <DataGrid x:Name="dgBillItems"
-                              AutoGenerateColumns="False"
-                              CanUserAddRows="False"
-                              CanUserDeleteRows="False"
-                              RowHeight="36"
-                              CellEditEnding="DgBillItems_CellEditEnding"
-                              ScrollViewer.HorizontalScrollBarVisibility="Auto">
-
+                              Style="{StaticResource InvoiceGrid}"
+                              CellEditEnding="DgBillItems_CellEditEnding">
                         <DataGrid.Columns>
-                            <DataGridTemplateColumn Header="Motor No. *" Width="120">
+
+                            <!-- Motor Number with autocomplete -->
+                            <DataGridTemplateColumn Header="Motor No. *" Width="130">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
-                                        <TextBlock Text="{Binding MotorNumber}" Padding="4 2"/>
+                                        <TextBlock Text="{Binding MotorNumber}"
+                                                   Padding="10 0" VerticalAlignment="Center"/>
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
                                 <DataGridTemplateColumn.CellEditingTemplate>
@@ -76,16 +268,28 @@
                                             <TextBox x:Name="MotorBox"
                                                      Text="{Binding MotorNumber, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                                      TextChanged="MotorBox_TextChanged"
-                                                     BorderThickness="0" Padding="2"/>
+                                                     BorderThickness="0" Padding="6 0"
+                                                     VerticalContentAlignment="Center"
+                                                     Background="White"/>
                                             <Popup x:Name="MotorPopup"
                                                    PlacementTarget="{Binding ElementName=MotorBox}"
                                                    Placement="Bottom" StaysOpen="False"
                                                    AllowsTransparency="True">
                                                 <Border Background="White"
-                                                        BorderBrush="#AAAAAA"
-                                                        BorderThickness="1" MaxHeight="200">
+                                                        BorderBrush="#CBD5E1"
+                                                        BorderThickness="1"
+                                                        CornerRadius="8"
+                                                        MaxHeight="220">
+                                                    <Border.Effect>
+                                                        <DropShadowEffect BlurRadius="16"
+                                                                          ShadowDepth="4"
+                                                                          Color="#94A3B8"
+                                                                          Opacity="0.3"/>
+                                                    </Border.Effect>
                                                     <ListBox x:Name="MotorSuggestionList"
-                                                             MinWidth="220"
+                                                             MinWidth="240"
+                                                             BorderThickness="0"
+                                                             Background="Transparent"
                                                              PreviewMouseDown="MotorSuggestionList_PreviewMouseDown"/>
                                                 </Border>
                                             </Popup>
@@ -94,151 +298,316 @@
                                 </DataGridTemplateColumn.CellEditingTemplate>
                             </DataGridTemplateColumn>
 
-                            <DataGridTextColumn Header="Model"       Binding="{Binding Model}"         IsReadOnly="True" Width="120"/>
-                            <DataGridTextColumn Header="Brand"       Binding="{Binding Brand}"         IsReadOnly="True" Width="90"/>
-                            <DataGridTextColumn Header="Motor Power" Binding="{Binding MotorPower}"    IsReadOnly="True" Width="90"/>
-                            <DataGridTextColumn Header="Chassis No." Binding="{Binding ChassisNumber}" IsReadOnly="True" Width="110"/>
+                            <DataGridTextColumn Header="Model"       Binding="{Binding Model}"         IsReadOnly="True" Width="115"/>
+                            <DataGridTextColumn Header="Brand"       Binding="{Binding Brand}"         IsReadOnly="True" Width="85"/>
+                            <DataGridTextColumn Header="Motor Power" Binding="{Binding MotorPower}"    IsReadOnly="True" Width="95"/>
+                            <DataGridTextColumn Header="Chassis No." Binding="{Binding ChassisNumber}" IsReadOnly="True" Width="115"/>
                             <DataGridTextColumn Header="Color"       Binding="{Binding Color}"         IsReadOnly="True" Width="75"/>
-                            <DataGridTextColumn Header="Warranty"    Binding="{Binding Warranty}"      IsReadOnly="True" Width="75"/>
+                            <DataGridTextColumn Header="Warranty"    Binding="{Binding Warranty}"      IsReadOnly="True" Width="80"/>
                             <DataGridTextColumn Header="Price (PKR)"
                                                 Binding="{Binding Price, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                                Width="100"/>
+                                                Width="105"/>
                             <DataGridTextColumn Header="Qty"
                                                 Binding="{Binding Quantity, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                                Width="55"/>
-                            <DataGridTextColumn Header="Total"
+                                                Width="50"/>
+                            <DataGridTextColumn Header="Total (PKR)"
                                                 Binding="{Binding TotalPrice, StringFormat=N2}"
                                                 IsReadOnly="True" Width="110"/>
 
-                            <DataGridTemplateColumn Header="Remove" Width="75">
+                            <!-- Remove Button -->
+                            <DataGridTemplateColumn Header="" Width="60">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
-                                        <Button Content="X" Width="50" Height="26"
-                                                Background="#DC3545" Foreground="White"
+                                        <Button Content="✕"
+                                                Width="32" Height="28"
+                                                Background="#FEE2E2"
+                                                Foreground="#DC2626"
                                                 BorderThickness="0"
-                                                Click="RemoveBike_Click"/>
+                                                FontWeight="Bold"
+                                                FontSize="13"
+                                                Cursor="Hand"
+                                                Click="RemoveBike_Click">
+                                            <Button.Template>
+                                                <ControlTemplate TargetType="Button">
+                                                    <Border Background="{TemplateBinding Background}"
+                                                            CornerRadius="6">
+                                                        <ContentPresenter HorizontalAlignment="Center"
+                                                                          VerticalAlignment="Center"/>
+                                                    </Border>
+                                                </ControlTemplate>
+                                            </Button.Template>
+                                        </Button>
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
                         </DataGrid.Columns>
                     </DataGrid>
-
-                    <TextBlock Text="* Enter Motor Number in the last row to add a bike. A new row appears automatically."
-                               FontStyle="Italic" Foreground="#888888"
-                               Margin="0 6 0 0" FontSize="11"/>
                 </StackPanel>
             </Border>
 
-            <!-- REMARKS + PAYMENT -->
-            <Border Grid.Row="2"
-                    Background="White" CornerRadius="10"
-                    Padding="15" Margin="0 0 0 12">
+            <!-- ══════════════════════════════════════
+                 PAYMENT + REMARKS
+            ══════════════════════════════════════ -->
+            <Border Grid.Row="3"
+                    Background="White"
+                    CornerRadius="12"
+                    Padding="18 16"
+                    Margin="0 0 0 14">
+                <Border.Effect>
+                    <DropShadowEffect BlurRadius="12" ShadowDepth="2"
+                                      Color="#CBD5E1" Opacity="0.35" Direction="270"/>
+                </Border.Effect>
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="300"/>
+                        <ColumnDefinition Width="16"/>
+                        <ColumnDefinition Width="380"/>
                     </Grid.ColumnDefinitions>
 
-                    <StackPanel Grid.Column="0" Margin="0 0 20 0">
-                        <TextBlock Text="Remarks" FontWeight="Bold" Margin="0 0 0 5"/>
-                        <TextBox x:Name="txtRemarks" Height="70"
-                                 AcceptsReturn="True" TextWrapping="Wrap"
+                    <!-- Remarks -->
+                    <StackPanel Grid.Column="0">
+                        <StackPanel Orientation="Horizontal" Margin="0 0 0 10">
+                            <Border Background="#FFF7ED" CornerRadius="6" Padding="8 4" Margin="0 0 10 0">
+                                <TextBlock Text="📝" FontSize="14"/>
+                            </Border>
+                            <TextBlock Text="REMARKS &amp; OPTIONS"
+                                       Style="{StaticResource SectionHeader}"
+                                       VerticalAlignment="Center"/>
+                        </StackPanel>
+
+                        <TextBlock Text="REMARKS" Style="{StaticResource FieldLabel}"/>
+                        <TextBox x:Name="txtRemarks"
+                                 Height="80"
+                                 AcceptsReturn="True"
+                                 TextWrapping="Wrap"
                                  VerticalScrollBarVisibility="Auto"
+                                 Background="#F8FAFC"
+                                 BorderBrush="#E2E8F0"
+                                 BorderThickness="1.5"
+                                 Padding="10 8"
+                                 FontSize="13"
+                                 Margin="0 0 0 14"
                                  TextChanged="MarkDirty"/>
+
+                        <!-- Checkboxes -->
+                        <TextBlock Text="OPTIONS" Style="{StaticResource FieldLabel}" Margin="0 0 0 8"/>
+                        <StackPanel Orientation="Horizontal">
+                            <Border Background="#F0FDF4" CornerRadius="8" Padding="10 8" Margin="0 0 8 0">
+                                <CheckBox x:Name="chkWarrantyCard"
+                                          Content="Warranty Card Given"
+                                          Foreground="#15803D" FontSize="12"/>
+                            </Border>
+                            <Border Background="#EFF6FF" CornerRadius="8" Padding="10 8" Margin="0 0 8 0">
+                                <CheckBox x:Name="chkVoucherCustomer"
+                                          Content="Voucher Given to Customer"
+                                          Foreground="#1D4ED8" FontSize="12"/>
+                            </Border>
+                            <Border Background="#FFF7ED" CornerRadius="8" Padding="10 8">
+                                <CheckBox x:Name="chkVoucherCompany"
+                                          Content="Voucher Issued by Company"
+                                          Foreground="#B45309" FontSize="12"/>
+                            </Border>
+                        </StackPanel>
                     </StackPanel>
 
-                    <StackPanel Grid.Column="1">
-                        <TextBlock Text="Payment Method" FontWeight="Bold" Margin="0 0 0 8"/>
-                        <StackPanel Orientation="Horizontal" Margin="0 0 0 8">
-                            <RadioButton x:Name="rbCash" Content="Cash"
-                                         GroupName="PaymentMethod" IsChecked="True"
-                                         FontSize="14" Margin="0 0 20 0"
-                                         Checked="PaymentMethod_Changed"/>
-                            <RadioButton x:Name="rbAccount" Content="Account / Bank Transfer"
-                                         GroupName="PaymentMethod" FontSize="14"
-                                         Checked="PaymentMethod_Changed"/>
-                        </StackPanel>
-                        <StackPanel x:Name="pnlAccountDetail" Visibility="Collapsed">
-                            <TextBlock Text="Account / Bank Detail" Margin="0 0 0 4"/>
-                            <TextBox x:Name="txtAccountDetail" Height="32"
-                                     VerticalContentAlignment="Center" Padding="4 0"
-                                     TextChanged="MarkDirty"/>
+                    <!-- Payment Section -->
+                    <StackPanel Grid.Column="2">
+                        <StackPanel Orientation="Horizontal" Margin="0 0 0 10">
+                            <Border Background="#F0FDF4" CornerRadius="6" Padding="8 4" Margin="0 0 10 0">
+                                <TextBlock Text="💳" FontSize="14"/>
+                            </Border>
+                            <TextBlock Text="PAYMENT DETAILS"
+                                       Style="{StaticResource SectionHeader}"
+                                       VerticalAlignment="Center"/>
                         </StackPanel>
 
-                        <!-- ✅ NEW: Due Date -->
-                        <Separator Margin="0 10"/>
-                        <TextBlock Text="Due Date (optional)" FontWeight="Bold" Margin="0 0 0 5"
-                                   ToolTip="Set a due date if the customer will pay remaining balance later"/>
-                        <DatePicker x:Name="dpDueDate"
-                                    Height="32"
-                                    SelectedDateChanged="DpDueDate_Changed"/>
-                        <TextBlock Text="Leave blank if no due date"
-                                   FontSize="11" Foreground="#888" Margin="0 3 0 0"/>
+                        <!-- Cash Payment Box -->
+                        <Border Background="#F0FDF4"
+                                BorderBrush="#BBF7D0"
+                                BorderThickness="1.5"
+                                CornerRadius="10"
+                                Padding="14 12"
+                                Margin="0 0 0 10">
+                            <StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0 0 0 8">
+                                    <TextBlock Text="💵" FontSize="16" Margin="0 0 6 0"/>
+                                    <TextBlock Text="Cash Payment"
+                                               FontWeight="Bold" FontSize="13"
+                                               Foreground="#15803D"/>
+                                </StackPanel>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Amount (PKR)" Style="{StaticResource FieldLabel}"
+                                               VerticalAlignment="Center" Margin="0 0 10 0" Width="95"/>
+                                    <TextBox Grid.Column="1" x:Name="txtPaidCash"
+                                             Style="{StaticResource ModernInput}"
+                                             Background="White"
+                                             TextChanged="Recalculate"/>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Account Payment Box -->
+                        <Border Background="#EFF6FF"
+                                BorderBrush="#BFDBFE"
+                                BorderThickness="1.5"
+                                CornerRadius="10"
+                                Padding="14 12"
+                                Margin="0 0 0 10">
+                            <StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0 0 0 8">
+                                    <TextBlock Text="🏦" FontSize="16" Margin="0 0 6 0"/>
+                                    <TextBlock Text="Account / Bank Payment"
+                                               FontWeight="Bold" FontSize="13"
+                                               Foreground="#1D4ED8"/>
+                                </StackPanel>
+                                <Grid Margin="0 0 0 8">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Amount (PKR)" Style="{StaticResource FieldLabel}"
+                                               VerticalAlignment="Center" Margin="0 0 10 0" Width="95"/>
+                                    <TextBox Grid.Column="1" x:Name="txtPaidAccount"
+                                             Style="{StaticResource ModernInput}"
+                                             Background="White"
+                                             TextChanged="Recalculate"/>
+                                </Grid>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Account Detail" Style="{StaticResource FieldLabel}"
+                                               VerticalAlignment="Center" Margin="0 0 10 0" Width="95"/>
+                                    <TextBox Grid.Column="1" x:Name="txtAccountDetail"
+                                             Style="{StaticResource ModernInput}"
+                                             Background="White"
+                                             TextChanged="MarkDirty"/>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Due Date Box -->
+                        <Border Background="#FFFBEB"
+                                BorderBrush="#FDE68A"
+                                BorderThickness="1.5"
+                                CornerRadius="10"
+                                Padding="14 12">
+                            <StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0 0 0 8">
+                                    <TextBlock Text="📅" FontSize="16" Margin="0 0 6 0"/>
+                                    <TextBlock Text="Due Date  (optional)"
+                                               FontWeight="Bold" FontSize="13"
+                                               Foreground="#B45309"/>
+                                </StackPanel>
+                                <DatePicker x:Name="dpDueDate"
+                                            Height="36"
+                                            Background="White"
+                                            SelectedDateChanged="DpDueDate_Changed"/>
+                                <TextBlock Text="Leave blank if full payment received"
+                                           FontSize="11" Foreground="#92400E" Margin="0 5 0 0"/>
+                            </StackPanel>
+                        </Border>
                     </StackPanel>
                 </Grid>
             </Border>
 
-            <!-- TOTALS + BUTTONS -->
-            <Border Grid.Row="3"
-                    Background="White" CornerRadius="10"
-                    Padding="15">
-                <StackPanel>
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                        <StackPanel Margin="10">
-                            <TextBlock Text="Total" FontWeight="Bold"/>
-                            <TextBlock x:Name="txtTotal" FontSize="16" FontWeight="Bold"/>
-                        </StackPanel>
-                        <StackPanel Margin="10">
-                            <TextBlock Text="Discount"/>
-                            <TextBox x:Name="txtDiscount" Width="90" TextChanged="Recalculate"/>
-                        </StackPanel>
-                        <StackPanel Margin="10">
-                            <TextBlock Text="Net Bill" FontWeight="Bold"/>
-                            <TextBlock x:Name="txtNetBill" FontSize="16" FontWeight="Bold"/>
-                        </StackPanel>
-                        <StackPanel Margin="10">
-                            <TextBlock Text="Paid (PKR)"/>
-                            <TextBox x:Name="txtPaid" Width="110" TextChanged="Recalculate"/>
-                        </StackPanel>
-                        <StackPanel Margin="10">
-                            <TextBlock Text="Remaining" FontWeight="Bold"/>
-                            <TextBlock x:Name="txtRemaining" FontSize="16" FontWeight="Bold"
-                                       Foreground="#DC3545"/>
-                        </StackPanel>
+            <!-- ══════════════════════════════════════
+                 TOTALS BAR
+            ══════════════════════════════════════ -->
+            <Border Grid.Row="4"
+                    Background="#1A3C5E"
+                    CornerRadius="12"
+                    Padding="20 16">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="16"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Total -->
+                    <StackPanel Grid.Column="0" HorizontalAlignment="Center">
+                        <TextBlock Text="TOTAL" FontSize="10" FontWeight="Bold"
+                                   Foreground="#94A3B8" HorizontalAlignment="Center"/>
+                        <TextBlock x:Name="txtTotal" FontSize="18" FontWeight="Bold"
+                                   Foreground="White" HorizontalAlignment="Center" Margin="0 4 0 0"/>
                     </StackPanel>
 
-                    <Separator Margin="0 12"/>
+                    <!-- Discount -->
+                    <StackPanel Grid.Column="1" HorizontalAlignment="Center">
+                        <TextBlock Text="DISCOUNT" FontSize="10" FontWeight="Bold"
+                                   Foreground="#94A3B8" HorizontalAlignment="Center"/>
+                        <TextBox x:Name="txtDiscount"
+                                 Height="32" Width="110"
+                                 Background="#253F5E"
+                                 Foreground="White"
+                                 BorderBrush="#3B5F82"
+                                 BorderThickness="1"
+                                 Padding="8 0"
+                                 VerticalContentAlignment="Center"
+                                 FontSize="14" FontWeight="Bold"
+                                 HorizontalAlignment="Center"
+                                 Margin="0 4 0 0"
+                                 TextChanged="Recalculate"/>
+                    </StackPanel>
 
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
+                    <!-- Net Bill -->
+                    <StackPanel Grid.Column="2" HorizontalAlignment="Center">
+                        <TextBlock Text="NET BILL" FontSize="10" FontWeight="Bold"
+                                   Foreground="#94A3B8" HorizontalAlignment="Center"/>
+                        <TextBlock x:Name="txtNetBill" FontSize="18" FontWeight="Bold"
+                                   Foreground="#60A5FA" HorizontalAlignment="Center" Margin="0 4 0 0"/>
+                    </StackPanel>
 
-                        <StackPanel Grid.Column="0" Orientation="Horizontal">
-                            <CheckBox x:Name="chkWarrantyCard"
-                                      Content="Warranty Card Given" Margin="0 0 20 0"/>
-                            <CheckBox x:Name="chkVoucherCustomer"
-                                      Content="Voucher Given to Customer" Margin="0 0 20 0"/>
-                            <CheckBox x:Name="chkVoucherCompany"
-                                      Content="Voucher Issued by Company"/>
-                        </StackPanel>
+                    <!-- Cash Paid -->
+                    <StackPanel Grid.Column="3" HorizontalAlignment="Center">
+                        <TextBlock Text="CASH PAID" FontSize="10" FontWeight="Bold"
+                                   Foreground="#94A3B8" HorizontalAlignment="Center"/>
+                        <TextBlock x:Name="txtCashPaidDisplay" FontSize="18" FontWeight="Bold"
+                                   Foreground="#4ADE80" HorizontalAlignment="Center" Margin="0 4 0 0"/>
+                    </StackPanel>
 
-                        <StackPanel Grid.Column="1" Orientation="Horizontal">
-                            <Button Content="Save Invoice"
-                                    Width="150" Height="40"
-                                    Background="#28A745" Foreground="White"
-                                    BorderThickness="0" FontWeight="Bold"
-                                    Margin="0 0 10 0"
-                                    Click="BtnSaveInvoice_Click"/>
-                            <Button Content="Print Invoice"
-                                    Width="150" Height="40"
-                                    Background="#0D6EFD" Foreground="White"
-                                    BorderThickness="0" FontWeight="Bold"
-                                    Click="BtnPrintInvoice_Click"/>
-                        </StackPanel>
-                    </Grid>
-                </StackPanel>
+                    <!-- Account Paid -->
+                    <StackPanel Grid.Column="4" HorizontalAlignment="Center">
+                        <TextBlock Text="ACCOUNT PAID" FontSize="10" FontWeight="Bold"
+                                   Foreground="#94A3B8" HorizontalAlignment="Center"/>
+                        <TextBlock x:Name="txtAccountPaidDisplay" FontSize="18" FontWeight="Bold"
+                                   Foreground="#93C5FD" HorizontalAlignment="Center" Margin="0 4 0 0"/>
+                    </StackPanel>
+
+                    <!-- Remaining -->
+                    <StackPanel Grid.Column="5" HorizontalAlignment="Center">
+                        <TextBlock Text="REMAINING" FontSize="10" FontWeight="Bold"
+                                   Foreground="#94A3B8" HorizontalAlignment="Center"/>
+                        <TextBlock x:Name="txtRemaining" FontSize="18" FontWeight="Bold"
+                                   Foreground="#FCA5A5" HorizontalAlignment="Center" Margin="0 4 0 0"/>
+                    </StackPanel>
+
+                    <!-- Buttons -->
+                    <StackPanel Grid.Column="7" Orientation="Horizontal" VerticalAlignment="Center">
+                        <Button Content="🖨  Print"
+                                Style="{StaticResource PrimaryBtn}"
+                                Background="#2563EB"
+                                Width="110" Padding="0"
+                                Margin="0 0 10 0"
+                                Click="BtnPrintInvoice_Click"/>
+                        <Button Content="💾  Save"
+                                Style="{StaticResource PrimaryBtn}"
+                                Background="#16A34A"
+                                Width="110" Padding="0"
+                                Click="BtnSaveInvoice_Click"/>
+                    </StackPanel>
+                </Grid>
             </Border>
 
         </Grid>
