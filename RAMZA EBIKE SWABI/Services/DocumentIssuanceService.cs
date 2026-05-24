@@ -1,4 +1,5 @@
 ﻿// Services/DocumentIssuanceService.cs
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -28,6 +29,18 @@ namespace Ramza_EBike_Swabi.Services
                 .ToListAsync();
         }
 
+        /// <summary>
+        /// Returns all remaining records for one invoice.
+        /// Used after a single-row delete to recalculate invoice checkbox flags.
+        /// </summary>
+        public async Task<List<DocumentIssuanceRecord>> GetIssuancesForInvoiceAsync(int invoiceId)
+        {
+            using var db = new AppDbContext();
+            return await db.DocumentIssuanceRecords
+                .Where(r => r.CustomerInvoiceId == invoiceId)
+                .ToListAsync();
+        }
+
         /// <summary>Update an existing issuance record including document flags.</summary>
         public async Task UpdateIssuanceAsync(
             int recordId,
@@ -50,15 +63,34 @@ namespace Ramza_EBike_Swabi.Services
             await db.SaveChangesAsync();
         }
 
-        /// <summary>Delete all issuance history for an invoice.</summary>
-        public async Task DeleteAllHistoryAsync(int invoiceId)
+        /// <summary>Deletes a single issuance record by its primary key.</summary>
+        public async Task DeleteIssuanceAsync(int recordId)
+        {
+            using var db = new AppDbContext();
+            var record = await db.DocumentIssuanceRecords.FindAsync(recordId);
+            if (record != null)
+            {
+                db.DocumentIssuanceRecords.Remove(record);
+                await db.SaveChangesAsync();
+            }
+        }
+
+        /// <summary>Delete all issuance history for an invoice (Clear All).</summary>
+        public async Task DeleteAllIssuancesForInvoiceAsync(int invoiceId)
         {
             using var db = new AppDbContext();
             var records = await db.DocumentIssuanceRecords
                 .Where(r => r.CustomerInvoiceId == invoiceId)
                 .ToListAsync();
+
             db.DocumentIssuanceRecords.RemoveRange(records);
             await db.SaveChangesAsync();
         }
+
+        /// <summary>
+        /// Kept for backward compatibility — delegates to DeleteAllIssuancesForInvoiceAsync.
+        /// </summary>
+        public Task DeleteAllHistoryAsync(int invoiceId)
+            => DeleteAllIssuancesForInvoiceAsync(invoiceId);
     }
 }
