@@ -19,11 +19,30 @@ namespace Ramza_EBike_Swabi.Services.Pdf
         private const string ShopAddress = "Main Jahangira Road Near Sadaat CNG, Swabi";
         private const string ShopPhone = "+92 345 9996397";
 
+        /// <summary>
+        /// Generate PDF and open it automatically
+        /// </summary>
         public static void Generate(CustomerInvoice invoice)
+        {
+            GenerateInternal(invoice, openAfterGenerate: true);
+        }
+
+        /// <summary>
+        /// ✅ NEW: Regenerate PDF silently without opening it
+        /// </summary>
+        public static void RegenerateWithoutOpening(CustomerInvoice invoice)
+        {
+            GenerateInternal(invoice, openAfterGenerate: false);
+        }
+
+        /// <summary>
+        /// Internal method that handles PDF generation
+        /// </summary>
+        private static void GenerateInternal(CustomerInvoice invoice, bool openAfterGenerate)
         {
             QuestPDF.Settings.License = LicenseType.Community;
 
-            // ✅ Issue 4: Fetch payment history from DB
+            // ✅ Fetch payment history from DB
             List<CustomerPaymentHistory> paymentHistory;
             using (var db = new AppDbContext())
             {
@@ -175,7 +194,7 @@ namespace Ramza_EBike_Swabi.Services.Pdf
                                        R("Discount:", $"PKR {invoice.Discount:N2}");
                                        R("Net Bill:", $"PKR {invoice.NetBill:N2}", bold: true);
 
-                                       // ✅ Show Cash + Account paid at invoice creation
+                                       // Show Cash + Account paid at invoice creation
                                        if (invoice.AmountPaidCash > 0 || invoice.AmountPaidAccount > 0)
                                        {
                                            if (invoice.AmountPaidCash > 0)
@@ -290,7 +309,7 @@ namespace Ramza_EBike_Swabi.Services.Pdf
                            .Text($"TOTAL AMOUNT:  PKR {invoice.TotalAmount:N2}")
                            .FontSize(10).Bold().FontColor(Colors.White);
 
-                        // ✅ Issue 4: Payment History section
+                        // ✅ Payment History section
                         if (paymentHistory.Count > 0)
                         {
                             col.Item().PaddingTop(8);
@@ -387,7 +406,7 @@ namespace Ramza_EBike_Swabi.Services.Pdf
                                            r.ConstantItem(14).Border(0.7f)
                                             .BorderColor(Color.FromHex("333333"))
                                             .AlignCenter().AlignMiddle()
-                                            .Text(ticked ? "v" : " ")
+                                            .Text(ticked ? "✓" : " ")
                                             .FontSize(8).Bold()
                                             .FontColor(Color.FromHex("1B4079"));
                                            r.RelativeItem().PaddingLeft(4)
@@ -434,11 +453,15 @@ namespace Ramza_EBike_Swabi.Services.Pdf
                 });
             }).GeneratePdf(filePath);
 
-            Process.Start(new ProcessStartInfo
+            // ✅ Only open if requested
+            if (openAfterGenerate)
             {
-                FileName = filePath,
-                UseShellExecute = true
-            });
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = filePath,
+                    UseShellExecute = true
+                });
+            }
         }
     }
 }
