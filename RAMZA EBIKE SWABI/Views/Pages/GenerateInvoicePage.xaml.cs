@@ -1,4 +1,8 @@
-﻿using System;
+﻿using Microsoft.EntityFrameworkCore;
+using Ramza_EBike_Swabi.Models;
+using Ramza_EBike_Swabi.Services;
+using Ramza_EBike_Swabi.Services.Pdf;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -7,9 +11,6 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
-using Ramza_EBike_Swabi.Models;
-using Ramza_EBike_Swabi.Services;
-using Ramza_EBike_Swabi.Services.Pdf;
 
 namespace Ramza_EBike_Swabi.Views.Pages
 {
@@ -206,7 +207,6 @@ namespace Ramza_EBike_Swabi.Views.Pages
         {
             if (!_suppressDirty) ScheduleAutoSave();
         }
-
         // ================== LOAD FOR EDIT ==================
         private void LoadInvoiceForEdit(CustomerInvoice invoice)
         {
@@ -219,29 +219,32 @@ namespace Ramza_EBike_Swabi.Views.Pages
             txtAddress.Text = invoice.Customer?.Address ?? string.Empty;
             txtDiscount.Text = invoice.Discount.ToString("N2");
 
-            // ✅ Backward compatible:
-            // Purane bills mein AmountPaidCash=0, AmountPaidAccount=0 hoga
-            // Us case mein AmountPaid ko Cash field mein show karo
+            // Backward compatible: old bills have AmountPaidCash=0 & AmountPaidAccount=0
             bool isLegacyBill = invoice.AmountPaidCash == 0 &&
                                  invoice.AmountPaidAccount == 0 &&
                                  invoice.AmountPaid > 0;
 
             if (txtPaidCash != null)
                 txtPaidCash.Text = isLegacyBill
-                    ? invoice.AmountPaid.ToString("N2")        // purana bill
-                    : invoice.AmountPaidCash.ToString("N2");   // naya bill
+                    ? invoice.AmountPaid.ToString("N2")
+                    : invoice.AmountPaidCash.ToString("N2");
 
             if (txtPaidAccount != null)
                 txtPaidAccount.Text = isLegacyBill
-                    ? "0"                                          // purana bill
-                    : invoice.AmountPaidAccount.ToString("N2");   // naya bill
+                    ? "0"
+                    : invoice.AmountPaidAccount.ToString("N2");
 
             if (txtRemarks != null) txtRemarks.Text = invoice.Remarks ?? string.Empty;
             if (dpDueDate != null) dpDueDate.SelectedDate = invoice.DueDate;
 
-            chkWarrantyCard.IsChecked = invoice.WarrantyCardGiven;
-            chkVoucherCustomer.IsChecked = invoice.VoucherGivenToCustomer;
-            chkVoucherCompany.IsChecked = invoice.VoucherIssuedByCompany;
+            // ✅ Always reflect latest document issuance flags from the invoice object
+            // (guaranteed fresh when called from OpenInvoiceForEditAsync)
+            if (chkWarrantyCard != null)
+                chkWarrantyCard.IsChecked = invoice.WarrantyCardGiven;
+            if (chkVoucherCustomer != null)
+                chkVoucherCustomer.IsChecked = invoice.VoucherGivenToCustomer;
+            if (chkVoucherCompany != null)
+                chkVoucherCompany.IsChecked = invoice.VoucherIssuedByCompany;
 
             BillItems.Clear();
             if (invoice.Items != null)
@@ -252,6 +255,37 @@ namespace Ramza_EBike_Swabi.Views.Pages
             Recalculate(null, null);
             _suppressDirty = false;
             _isDirty = false;
+        }
+
+        // ✅ NEW: Called from CustomerDuesPage Edit button — always fetches fresh from DB
+        public async Task OpenInvoiceForEditAsync(CustomerInvoice invoice)
+        {
+            try
+            {
+                // Re-fetch from DB to get latest WarrantyCardGiven / Voucher flags
+                // that may have been updated by IssueDocumentWindow after page load
+                using var db = new Data.AppDbContext();
+                var freshInvoice = await db.CustomerInvoices
+                    .Include(i => i.Customer)
+                    .Include(i => i.Items)
+                    .FirstOrDefaultAsync(i => i.CustomerInvoiceId == invoice.CustomerInvoiceId);
+
+                if (freshInvoice == null)
+                {
+                    MessageBox.Show("Invoice not found in database.", "Error",
+                        MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                _editingInvoice = freshInvoice;
+                LoadInvoiceForEdit(freshInvoice);   // checkboxes now reflect DB truth
+                _isDirty = false;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to load invoice for editing:\n\n{ex.Message}",
+                    "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
         // ================== MOTOR AUTOCOMPLETE ==================
