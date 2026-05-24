@@ -7,7 +7,6 @@
         WindowStartupLocation="CenterOwner"
         ResizeMode="NoResize"
         Background="#F4F6F9">
-
     <Border Padding="24">
         <StackPanel>
             <TextBlock x:Name="lblTitle"
@@ -55,7 +54,21 @@
                      AcceptsReturn="True" TextWrapping="Wrap"
                      VerticalScrollBarVisibility="Auto"
                      Padding="10 6"
-                     Margin="0 0 0 20"/>
+                     Margin="0 0 0 14"/>
+
+            <!-- ✅ NEW: Apply to PDF Checkbox -->
+            <Border Background="#FFF3CD" BorderBrush="#FFC107" BorderThickness="1" 
+                    CornerRadius="6" Padding="12" Margin="0 0 0 20">
+                <StackPanel>
+                    <CheckBox x:Name="chkApplyToPdf"
+                              Content="📄  Update Invoice PDF with Document History"
+                              FontSize="13" FontWeight="SemiBold"
+                              IsChecked="True"
+                              Margin="0 0 0 6"/>
+                    <TextBlock Text="When checked, the invoice PDF will be regenerated to include this document issuance record in the history section."
+                               FontSize="10" Foreground="#856404" TextWrapping="Wrap"/>
+                </StackPanel>
+            </Border>
 
             <!-- Buttons -->
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">

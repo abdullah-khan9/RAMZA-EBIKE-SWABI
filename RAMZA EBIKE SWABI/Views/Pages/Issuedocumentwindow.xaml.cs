@@ -1,6 +1,8 @@
 ﻿// IssueDocumentWindow.xaml.cs
 using System;
+using System.Linq;
 using System.Windows;
+using Microsoft.EntityFrameworkCore;
 using Ramza_EBike_Swabi.Models;
 using Ramza_EBike_Swabi.Services;
 
@@ -10,7 +12,6 @@ namespace Ramza_EBike_Swabi.Views.Pages
     {
         private readonly int _invoiceId;
         private readonly DocumentIssuanceService _service = new();
-
         public event Action? DocumentIssued;
 
         /// <summary>
@@ -22,7 +23,6 @@ namespace Ramza_EBike_Swabi.Views.Pages
         {
             InitializeComponent();
             _invoiceId = invoiceId;
-
             lblTitle.Text = $"Issue Document — {customerName}";
             lblSubtitle.Text = $"Invoice #INV-{invoiceId:D4}   •   Only pending documents are shown below.";
             txtDateTime.Text = DateTime.Now.ToString("dd MMM yyyy  hh:mm tt");
@@ -45,12 +45,14 @@ namespace Ramza_EBike_Swabi.Views.Pages
                     MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
+
             if (string.IsNullOrWhiteSpace(txtIssuedBy.Text))
             {
                 MessageBox.Show("Please enter who issued the document.", "Validation",
                     MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
+
             if (string.IsNullOrWhiteSpace(txtReceivedBy.Text))
             {
                 MessageBox.Show("Please enter who received the document.", "Validation",
@@ -70,13 +72,78 @@ namespace Ramza_EBike_Swabi.Views.Pages
                 Notes = txtNotes.Text?.Trim() ?? string.Empty
             };
 
-            await _service.AddIssuanceAsync(record);
+            try
+            {
+                // Save document issuance record
+                await _service.AddIssuanceAsync(record);
 
-            MessageBox.Show("Document issuance recorded successfully.", "Success",
-                MessageBoxButton.OK, MessageBoxImage.Information);
+                // ✅ Update invoice checklist and regenerate PDF if requested
+                bool applyToPdf = chkApplyToPdf.IsChecked == true;
 
-            DocumentIssued?.Invoke();
-            Close();
+                using (var db = new Data.AppDbContext())
+                {
+                    var invoice = db.CustomerInvoices
+                        .Include(i => i.Customer)
+                        .Include(i => i.Items)
+                        .FirstOrDefault(i => i.CustomerInvoiceId == _invoiceId);
+
+                    if (invoice != null)
+                    {
+                        // Update checklist flags in database
+                        if (warranty)
+                            invoice.WarrantyCardGiven = true;
+                        if (voucherCust)
+                            invoice.VoucherGivenToCustomer = true;
+                        if (voucherComp)
+                            invoice.VoucherIssuedByCompany = true;
+
+                        db.SaveChanges();
+
+                        // ✅ Regenerate PDF only if user wants to apply changes
+                        if (applyToPdf)
+                        {
+                            try
+                            {
+                                Services.Pdf.InvoicePdfService.RegenerateWithoutOpening(invoice);
+
+                                MessageBox.Show(
+                                    "Document issuance recorded successfully!\n\n" +
+                                    "✓ Invoice checklist updated\n" +
+                                    "✓ PDF regenerated with document history",
+                                    "Success",
+                                    MessageBoxButton.OK,
+                                    MessageBoxImage.Information);
+                            }
+                            catch (Exception ex)
+                            {
+                                MessageBox.Show(
+                                    $"Document issuance recorded, but PDF regeneration failed:\n{ex.Message}\n\n" +
+                                    "You can regenerate the PDF manually from the invoice page.",
+                                    "Partial Success",
+                                    MessageBoxButton.OK,
+                                    MessageBoxImage.Warning);
+                            }
+                        }
+                        else
+                        {
+                            MessageBox.Show(
+                                "Document issuance recorded successfully!\n\n" +
+                                "Note: PDF was not updated. You can regenerate it later if needed.",
+                                "Success",
+                                MessageBoxButton.OK,
+                                MessageBoxImage.Information);
+                        }
+                    }
+                }
+
+                DocumentIssued?.Invoke();
+                Close();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error: {ex.Message}", "Error",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
         private void BtnCancel_Click(object sender, RoutedEventArgs e) => Close();
