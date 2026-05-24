@@ -73,7 +73,6 @@
                            HorizontalAlignment="Center"
                            VerticalAlignment="Center"/>
 
-                <!-- Search controls on the right -->
                 <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
                     <ComboBox x:Name="cmbSearchType" Width="130" Height="35"
                               SelectedIndex="0" Margin="0 0 8 0"
@@ -93,8 +92,7 @@
                         <Button.Template>
                             <ControlTemplate TargetType="Button">
                                 <Border Background="{TemplateBinding Background}"
-                                        CornerRadius="6"
-                                        Padding="{TemplateBinding Padding}">
+                                        CornerRadius="6" Padding="{TemplateBinding Padding}">
                                     <ContentPresenter HorizontalAlignment="Center"
                                                       VerticalAlignment="Center"/>
                                 </Border>
@@ -108,8 +106,7 @@
                         <Button.Template>
                             <ControlTemplate TargetType="Button">
                                 <Border Background="{TemplateBinding Background}"
-                                        CornerRadius="6"
-                                        Padding="{TemplateBinding Padding}">
+                                        CornerRadius="6" Padding="{TemplateBinding Padding}">
                                     <ContentPresenter HorizontalAlignment="Center"
                                                       VerticalAlignment="Center"/>
                                 </Border>
@@ -193,8 +190,8 @@
                                             </StackPanel>
 
                                             <!-- Action Buttons -->
-                                            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                                                <!-- Issue — hidden when all delivered -->
+                                            <StackPanel Grid.Column="1" Orientation="Horizontal"
+                                                        VerticalAlignment="Center">
                                                 <Button Content="Issue Document"
                                                         Style="{StaticResource ActionBtn}"
                                                         Background="#0D6EFD"
@@ -221,7 +218,8 @@
                                     <Border Background="#D1FAE5" Padding="16 10"
                                             Visibility="{Binding AllDeliveredVisibility}">
                                         <StackPanel Orientation="Horizontal">
-                                            <TextBlock Text="✅" FontSize="16" Margin="0 0 8 0" VerticalAlignment="Center"/>
+                                            <TextBlock Text="✅" FontSize="16" Margin="0 0 8 0"
+                                                       VerticalAlignment="Center"/>
                                             <TextBlock Text="All documents have been delivered to the customer."
                                                        FontWeight="SemiBold" Foreground="#065F46"
                                                        VerticalAlignment="Center"/>
@@ -241,7 +239,8 @@
                                             <Border Background="#F1F5F9" CornerRadius="4"
                                                     Padding="8 4" Margin="0 0 0 10">
                                                 <TextBlock Text="CUSTOMER DETAILS"
-                                                           FontSize="10" FontWeight="Bold" Foreground="#64748B"/>
+                                                           FontSize="10" FontWeight="Bold"
+                                                           Foreground="#64748B"/>
                                             </Border>
                                             <Grid Margin="0 0 0 5">
                                                 <Grid.ColumnDefinitions>
@@ -277,13 +276,15 @@
                                                 </Grid.ColumnDefinitions>
                                                 <TextBlock Text="Address" Foreground="#6B7280" FontSize="12"/>
                                                 <TextBlock Grid.Column="1" Text="{Binding Address}"
-                                                           FontSize="12" FontWeight="SemiBold" TextWrapping="Wrap"/>
+                                                           FontSize="12" FontWeight="SemiBold"
+                                                           TextWrapping="Wrap"/>
                                             </Grid>
                                             <Border Background="#FFF3CD" CornerRadius="6" Padding="8 5"
                                                     Margin="0 10 0 0"
                                                     Visibility="{Binding DueDateVisibility}">
                                                 <StackPanel Orientation="Horizontal">
-                                                    <TextBlock Text="Due Date: " FontWeight="SemiBold" FontSize="12"/>
+                                                    <TextBlock Text="Due Date: " FontWeight="SemiBold"
+                                                               FontSize="12"/>
                                                     <TextBlock Text="{Binding DueDateText}" FontSize="12"/>
                                                 </StackPanel>
                                             </Border>
@@ -294,7 +295,8 @@
                                             <Border Background="#F1F5F9" CornerRadius="4"
                                                     Padding="8 4" Margin="0 0 0 10">
                                                 <TextBlock Text="BIKE DETAILS"
-                                                           FontSize="10" FontWeight="Bold" Foreground="#64748B"/>
+                                                           FontSize="10" FontWeight="Bold"
+                                                           Foreground="#64748B"/>
                                             </Border>
                                             <ItemsControl ItemsSource="{Binding BikesSummary}">
                                                 <ItemsControl.ItemTemplate>
@@ -305,7 +307,8 @@
                                                                 <TextBlock Text="{Binding ModelBrand}"
                                                                            FontWeight="SemiBold" FontSize="12"/>
                                                                 <TextBlock Text="{Binding MotorChassis}"
-                                                                           FontSize="11" Foreground="#6B7280" Margin="0 2 0 0"/>
+                                                                           FontSize="11" Foreground="#6B7280"
+                                                                           Margin="0 2 0 0"/>
                                                                 <TextBlock Text="{Binding ColorPower}"
                                                                            FontSize="11" Foreground="#6B7280"/>
                                                             </StackPanel>
@@ -320,7 +323,8 @@
                                             <Border Background="#F1F5F9" CornerRadius="4"
                                                     Padding="8 4" Margin="0 0 0 10">
                                                 <TextBlock Text="DOCUMENT STATUS"
-                                                           FontSize="10" FontWeight="Bold" Foreground="#64748B"/>
+                                                           FontSize="10" FontWeight="Bold"
+                                                           Foreground="#64748B"/>
                                             </Border>
 
                                             <!-- Warranty Card -->
@@ -335,10 +339,12 @@
                                                         <TextBlock Text="Warranty Card"
                                                                    FontWeight="SemiBold" FontSize="13"/>
                                                         <TextBlock Text="{Binding WarrantyStatus}"
-                                                                   FontSize="11" Foreground="{Binding WarrantyFg}"
+                                                                   FontSize="11"
+                                                                   Foreground="{Binding WarrantyFg}"
                                                                    Margin="0 2 0 0"/>
                                                     </StackPanel>
-                                                    <TextBlock Grid.Column="1" Text="{Binding WarrantyIcon}"
+                                                    <TextBlock Grid.Column="1"
+                                                               Text="{Binding WarrantyIcon}"
                                                                FontSize="20" VerticalAlignment="Center"/>
                                                 </Grid>
                                             </Border>
@@ -355,10 +361,12 @@
                                                         <TextBlock Text="Voucher (Customer)"
                                                                    FontWeight="SemiBold" FontSize="13"/>
                                                         <TextBlock Text="{Binding VoucherCustStatus}"
-                                                                   FontSize="11" Foreground="{Binding VoucherCustFg}"
+                                                                   FontSize="11"
+                                                                   Foreground="{Binding VoucherCustFg}"
                                                                    Margin="0 2 0 0"/>
                                                     </StackPanel>
-                                                    <TextBlock Grid.Column="1" Text="{Binding VoucherCustIcon}"
+                                                    <TextBlock Grid.Column="1"
+                                                               Text="{Binding VoucherCustIcon}"
                                                                FontSize="20" VerticalAlignment="Center"/>
                                                 </Grid>
                                             </Border>
@@ -375,10 +383,12 @@
                                                         <TextBlock Text="Voucher (Company)"
                                                                    FontWeight="SemiBold" FontSize="13"/>
                                                         <TextBlock Text="{Binding VoucherCompStatus}"
-                                                                   FontSize="11" Foreground="{Binding VoucherCompFg}"
+                                                                   FontSize="11"
+                                                                   Foreground="{Binding VoucherCompFg}"
                                                                    Margin="0 2 0 0"/>
                                                     </StackPanel>
-                                                    <TextBlock Grid.Column="1" Text="{Binding VoucherCompIcon}"
+                                                    <TextBlock Grid.Column="1"
+                                                               Text="{Binding VoucherCompIcon}"
                                                                FontSize="20" VerticalAlignment="Center"/>
                                                 </Grid>
                                             </Border>
@@ -407,45 +417,100 @@
                                                                     <ColumnDefinition Width="130"/>
                                                                     <ColumnDefinition Width="130"/>
                                                                     <ColumnDefinition Width="Auto"/>
+                                                                    <ColumnDefinition Width="Auto"/>
                                                                 </Grid.ColumnDefinitions>
+
                                                                 <TextBlock Grid.Column="0"
                                                                            Text="{Binding DateDisplay}"
                                                                            FontSize="11" Foreground="#374151"
                                                                            VerticalAlignment="Center"/>
+
                                                                 <Border Grid.Column="1"
                                                                         Background="{Binding LabelBg}"
-                                                                        CornerRadius="4" Padding="6 2" Margin="8 0">
+                                                                        CornerRadius="4" Padding="6 2"
+                                                                        Margin="8 0">
                                                                     <TextBlock Text="{Binding RowLabel}"
                                                                                FontSize="10" FontWeight="Bold"
                                                                                Foreground="{Binding LabelFg}"/>
                                                                 </Border>
+
                                                                 <TextBlock Grid.Column="2"
                                                                            Text="{Binding DocumentsIssued}"
                                                                            FontSize="12" FontWeight="SemiBold"
                                                                            Foreground="#111827"
                                                                            VerticalAlignment="Center"
                                                                            TextWrapping="Wrap"/>
+
                                                                 <StackPanel Grid.Column="3" Margin="8 0">
-                                                                    <TextBlock Text="Issued by" FontSize="10" Foreground="#9CA3AF"/>
+                                                                    <TextBlock Text="Issued by"
+                                                                               FontSize="10"
+                                                                               Foreground="#9CA3AF"/>
                                                                     <TextBlock Text="{Binding IssuedBy}"
-                                                                               FontSize="11" FontWeight="SemiBold" Foreground="#374151"/>
+                                                                               FontSize="11"
+                                                                               FontWeight="SemiBold"
+                                                                               Foreground="#374151"/>
                                                                 </StackPanel>
+
                                                                 <StackPanel Grid.Column="4">
-                                                                    <TextBlock Text="Received by" FontSize="10" Foreground="#9CA3AF"/>
+                                                                    <TextBlock Text="Received by"
+                                                                               FontSize="10"
+                                                                               Foreground="#9CA3AF"/>
                                                                     <TextBlock Text="{Binding ReceivedBy}"
-                                                                               FontSize="11" FontWeight="SemiBold" Foreground="#374151"/>
+                                                                               FontSize="11"
+                                                                               FontWeight="SemiBold"
+                                                                               Foreground="#374151"/>
                                                                 </StackPanel>
-                                                                <!-- Edit button — hidden for billing entries -->
+
+                                                                <!-- Edit button -->
                                                                 <Button Grid.Column="5"
                                                                         Content="Edit"
                                                                         Visibility="{Binding EditButtonVisibility}"
                                                                         Height="26" Padding="10 0"
-                                                                        Background="#6366F1" Foreground="White"
+                                                                        Background="#6366F1"
+                                                                        Foreground="White"
                                                                         BorderThickness="0" FontSize="11"
                                                                         FontWeight="SemiBold" Cursor="Hand"
-                                                                        Margin="10 0 0 0"
+                                                                        Margin="10 0 4 0"
                                                                         Tag="{Binding}"
-                                                                        Click="BtnEditHistory_Click"/>
+                                                                        Click="BtnEditHistory_Click">
+                                                                    <Button.Template>
+                                                                        <ControlTemplate TargetType="Button">
+                                                                            <Border Background="{TemplateBinding Background}"
+                                                                                    CornerRadius="5"
+                                                                                    Padding="{TemplateBinding Padding}">
+                                                                                <ContentPresenter
+                                                                                    HorizontalAlignment="Center"
+                                                                                    VerticalAlignment="Center"/>
+                                                                            </Border>
+                                                                        </ControlTemplate>
+                                                                    </Button.Template>
+                                                                </Button>
+
+                                                                <!-- ✅ Delete row button -->
+                                                                <Button Grid.Column="6"
+                                                                        Content="🗑"
+                                                                        Visibility="{Binding EditButtonVisibility}"
+                                                                        Height="26" Padding="8 0"
+                                                                        Background="#DC2626"
+                                                                        Foreground="White"
+                                                                        BorderThickness="0" FontSize="11"
+                                                                        FontWeight="SemiBold" Cursor="Hand"
+                                                                        Margin="0 0 0 0"
+                                                                        Tag="{Binding}"
+                                                                        Click="BtnDeleteHistoryRow_Click">
+                                                                    <Button.Template>
+                                                                        <ControlTemplate TargetType="Button">
+                                                                            <Border Background="{TemplateBinding Background}"
+                                                                                    CornerRadius="5"
+                                                                                    Padding="{TemplateBinding Padding}">
+                                                                                <ContentPresenter
+                                                                                    HorizontalAlignment="Center"
+                                                                                    VerticalAlignment="Center"/>
+                                                                            </Border>
+                                                                        </ControlTemplate>
+                                                                    </Button.Template>
+                                                                </Button>
+
                                                             </Grid>
                                                         </Border>
                                                     </DataTemplate>
@@ -456,12 +521,14 @@
 
                                     <!-- Remarks -->
                                     <Border Visibility="{Binding RemarksVisibility}"
-                                            Background="#FFFBEB" CornerRadius="0 0 10 10" Padding="18 10">
+                                            Background="#FFFBEB" CornerRadius="0 0 10 10"
+                                            Padding="18 10">
                                         <StackPanel Orientation="Horizontal">
                                             <TextBlock Text="Remarks: " FontWeight="SemiBold"
                                                        FontSize="12" Foreground="#92400E"/>
                                             <TextBlock Text="{Binding Remarks}"
-                                                       FontSize="12" Foreground="#78350F" TextWrapping="Wrap"/>
+                                                       FontSize="12" Foreground="#78350F"
+                                                       TextWrapping="Wrap"/>
                                         </StackPanel>
                                     </Border>
 
