@@ -3,6 +3,7 @@ using System.Windows;
 using System.Windows.Controls;
 using Ramza_EBike_Swabi.Views.Pages.Components;
 using Ramza_EBike_Swabi.Views.Windows;
+using Ramza_EBike_Swabi.Services; // ← ADD KARO
 
 namespace Ramza_EBike_Swabi.Views.Pages
 {
@@ -10,8 +11,6 @@ namespace Ramza_EBike_Swabi.Views.Pages
     {
         private readonly string _fullName;
         private readonly string _role;
-
-        // ✅ Singleton tab manager — keeps invoice tabs alive across navigation
         public InvoiceTabManagerPage? InvoiceTabManager { get; set; }
 
         public MainLayout(string fullName, string role)
@@ -19,13 +18,9 @@ namespace Ramza_EBike_Swabi.Views.Pages
             InitializeComponent();
             _fullName = fullName;
             _role = role;
-
-            // Setup navbar
             NavbarControl.Username = $"{_fullName} ({_role})";
             NavbarControl.LogoutClicked -= Navbar_LogoutClicked;
             NavbarControl.LogoutClicked += Navbar_LogoutClicked;
-
-            // Navigate to Dashboard
             MainFrame.Navigate(new DashboardPage(this));
         }
 
@@ -42,12 +37,16 @@ namespace Ramza_EBike_Swabi.Views.Pages
                 "Logout",
                 MessageBoxButton.YesNo,
                 MessageBoxImage.Question);
-
             if (confirm != MessageBoxResult.Yes) return;
-
             var loginWindow = new LoginWindow();
             loginWindow.Show();
             this.Close();
+        }
+
+        // ← ADD KARO
+        private async void CheckUpdates_Click(object sender, RoutedEventArgs e)
+        {
+            await UpdaterService.CheckForUpdatesManualAsync();
         }
     }
 }

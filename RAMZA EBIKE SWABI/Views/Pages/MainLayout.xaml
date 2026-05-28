@@ -7,12 +7,75 @@
         WindowStartupLocation="CenterScreen"
         ResizeMode="CanResize"
         Background="#F5F6FA">
-
     <DockPanel>
+
         <!-- Navbar -->
         <components:Navbar x:Name="NavbarControl" DockPanel.Dock="Top"/>
 
-        <!-- Main frame -->
+        <!-- Bottom Bar with Check Updates -->
+        <Border DockPanel.Dock="Bottom"
+                Background="#F0F0F0"
+                BorderBrush="#DDDDDD"
+                BorderThickness="0,1,0,0"
+                Height="45">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+
+                <!-- Version Text -->
+                <TextBlock Grid.Column="0"
+           VerticalAlignment="Center"
+           Margin="15,0,0,0">
+    <Run Text="Developed By Abdullah Khan - Software Engineer - 03119484920 - abdullahkhan.tech9@gmail.com"
+         Foreground="#777777"
+         FontSize="11"/>
+                </TextBlock>
+
+                <!-- Check Updates Button -->
+                <Button Grid.Column="1"
+                        Click="CheckUpdates_Click"
+                        HorizontalAlignment="Right"
+                        VerticalAlignment="Center"
+                        Margin="0,0,15,0"
+                        Cursor="Hand"
+                        Background="Transparent"
+                        BorderThickness="0">
+                    <Border CornerRadius="15"
+                            Padding="15,6">
+                        <Border.Background>
+                            <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                                <GradientStop Color="#008000" Offset="0"/>
+                                <GradientStop Color="#00A550" Offset="1"/>
+                            </LinearGradientBrush>
+                        </Border.Background>
+                        <Border.Effect>
+                            <DropShadowEffect Color="#008000"
+                                              BlurRadius="8"
+                                              ShadowDepth="2"
+                                              Opacity="0.3"/>
+                        </Border.Effect>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="🔄"
+                                       FontSize="12"
+                                       VerticalAlignment="Center"
+                                       Margin="0,0,6,0"/>
+                            <TextBlock Text="Check Updates"
+                                       Foreground="White"
+                                       FontSize="12"
+                                       FontWeight="SemiBold"
+                                       VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Border>
+                </Button>
+
+            </Grid>
+        </Border>
+
+        <!-- Main Frame -->
         <Frame x:Name="MainFrame" NavigationUIVisibility="Hidden"/>
+
     </DockPanel>
 </Window>
