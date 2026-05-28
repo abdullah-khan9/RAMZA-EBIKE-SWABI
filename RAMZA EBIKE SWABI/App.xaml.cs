@@ -14,7 +14,7 @@ namespace Ramza_EBike_Swabi
         private readonly string connectionString =
             "Server=.\\SQLEXPRESS;Database=RamzaEBikeSwabiDb;Trusted_Connection=True;TrustServerCertificate=True;";
 
-        protected override void OnStartup(StartupEventArgs e)
+        protected override async void OnStartup(StartupEventArgs e) // 
         {
             base.OnStartup(e);
             EnsureDatabaseReady();
