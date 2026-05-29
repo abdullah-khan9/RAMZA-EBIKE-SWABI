@@ -1,6 +1,5 @@
 ﻿using System.Diagnostics;
 using System.IO;
-using System.IO.Compression;
 using System.Net.Http;
 using System.Text.Json;
 using System.Windows;
@@ -11,7 +10,7 @@ namespace Ramza_EBike_Swabi.Services
     {
         private const string GitHubUser = "abdullah-khan9";
         private const string GitHubRepo = "RAMZA-EBIKE-SWABI";
-        public const string CurrentVersion = "1.0.1";
+        public const string CurrentVersion = "1.0.3";
 
         // ── Sirf button click se call hoga ──────────────────────────────
         public static async Task CheckForUpdatesManualAsync()
@@ -34,12 +33,12 @@ namespace Ramza_EBike_Swabi.Services
                 if (latest == CurrentVersion)
                 {
                     MessageBox.Show(
-     $"✅ Your software is up to date!\n\n" +
-     $"Current Version :  v{CurrentVersion}\n" +
-     $"Last Update     :  {releaseDate:dd MMM yyyy   hh:mm tt}",
-     "No Updates Available",
-     MessageBoxButton.OK,
-     MessageBoxImage.Information);
+                        $"✅ Your software is up to date!\n\n" +
+                        $"Current Version :  v{CurrentVersion}\n" +
+                        $"Last Update     :  {releaseDate:dd MMM yyyy   hh:mm tt}",
+                        "No Updates Available",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Information);
                     return;
                 }
 
@@ -50,14 +49,14 @@ namespace Ramza_EBike_Swabi.Services
                     .GetString()!;
 
                 var result = MessageBox.Show(
-     $"🔄 A new update is available!\n\n" +
-     $"Your Version   :  v{CurrentVersion}\n" +
-     $"New Version    :  v{latest}\n" +
-     $"Release Date   :  {releaseDate:dd MMM yyyy   hh:mm tt}\n\n" +
-     $"Would you like to update now?",
-     "Update Available",
-     MessageBoxButton.YesNo,
-     MessageBoxImage.Information);
+                    $"🔄 A new update is available!\n\n" +
+                    $"Your Version   :  v{CurrentVersion}\n" +
+                    $"New Version    :  v{latest}\n" +
+                    $"Release Date   :  {releaseDate:dd MMM yyyy   hh:mm tt}\n\n" +
+                    $"Would you like to update now?",
+                    "Update Available",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Information);
 
                 if (result == MessageBoxResult.Yes)
                     await DownloadAndApply(http, downloadUrl);
@@ -65,26 +64,17 @@ namespace Ramza_EBike_Swabi.Services
             catch (Exception ex)
             {
                 MessageBox.Show(
-     $"⚠️ Unable to check for updates.\n\nPlease check your internet connection.\n\nError: {ex.Message}",
-     "Update Error",
-     MessageBoxButton.OK,
-     MessageBoxImage.Warning);
+                    $"⚠️ Unable to check for updates.\n\nPlease check your internet connection.\n\nError: {ex.Message}",
+                    "Update Error",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
             }
         }
 
-        // ── Download + Progress + Replace + Restart ──────────────────────
+        // ── Download Installer + Progress + Run ──────────────────────────
         private static async Task DownloadAndApply(HttpClient http, string downloadUrl)
         {
-            string tempZip = Path.Combine(Path.GetTempPath(), "RamzaUpdate.zip");
-            string extractPath = Path.Combine(Path.GetTempPath(), "RamzaUpdateExtracted");
-            string appDir = AppDomain.CurrentDomain.BaseDirectory;
-            string exeName = Path.GetFileName(Environment.ProcessPath!);
-
-            // appsettings.json backup — client ka config safe rahega
-            string settingsSrc = Path.Combine(appDir, "appsettings.json");
-            string settingsBak = Path.Combine(Path.GetTempPath(), "appsettings_backup.json");
-            if (File.Exists(settingsSrc))
-                File.Copy(settingsSrc, settingsBak, overwrite: true);
+            string tempInstaller = Path.Combine(Path.GetTempPath(), "RamzaSetup.exe");
 
             // ── Progress Window ──────────────────────────────────────────
             System.Windows.Controls.ProgressBar progressBar = null!;
@@ -123,7 +113,7 @@ namespace Ramza_EBike_Swabi.Services
 
                 progressWindow = new Window
                 {
-                    Title = "Updating...",
+                    Title = "Updating Ramza E-Bike Swabi",
                     Width = 430,
                     Height = 170,
                     WindowStartupLocation = WindowStartupLocation.CenterScreen,
@@ -139,7 +129,7 @@ namespace Ramza_EBike_Swabi.Services
             using var response = await http.GetAsync(downloadUrl, HttpCompletionOption.ResponseHeadersRead);
             long totalBytes = response.Content.Headers.ContentLength ?? 0;
             using var stream = await response.Content.ReadAsStreamAsync();
-            using var fileStream = new FileStream(tempZip, FileMode.Create);
+            using var fileStream = new FileStream(tempInstaller, FileMode.Create);
 
             byte[] buffer = new byte[8192];
             long downloaded = 0;
@@ -163,47 +153,23 @@ namespace Ramza_EBike_Swabi.Services
 
             fileStream.Close();
 
-            // ── Extract ──────────────────────────────────────────────────
             Application.Current.Dispatcher.Invoke(() =>
             {
-                label.Text = "Extracting files...";
+                label.Text = "Download complete. Installing update...";
                 progressBar.Value = 100;
                 percentLabel.Text = "Please wait...";
             });
 
-            if (Directory.Exists(extractPath))
-                Directory.Delete(extractPath, true);
-            ZipFile.ExtractToDirectory(tempZip, extractPath);
-
-            // ── Replace + Restart ─────────────────────────────────────────
-            Application.Current.Dispatcher.Invoke(() =>
-            {
-                label.Text = "Installing update... App will restart shortly.";
-            });
-
-            string batPath = Path.Combine(Path.GetTempPath(), "ramza_update.bat");
-            string bat = $"""
-                @echo off
-                timeout /t 2 /nobreak > nul
-                xcopy /s /y "{extractPath}\*" "{appDir}"
-                copy /y "{settingsBak}" "{appDir}appsettings.json"
-                start "" "{appDir}{exeName}"
-                rmdir /s /q "{extractPath}"
-                del "{tempZip}"
-                del "{settingsBak}"
-                del "%~f0"
-                """;
-
-            await File.WriteAllTextAsync(batPath, bat);
+            // ── Installer Silent Run ──────────────────────────────────────
+            Application.Current.Dispatcher.Invoke(() => progressWindow.Close());
 
             Process.Start(new ProcessStartInfo
             {
-                FileName = batPath,
-                UseShellExecute = true,
-                WindowStyle = ProcessWindowStyle.Hidden
+                FileName = tempInstaller,
+                Arguments = "/SILENT",
+                UseShellExecute = true
             });
 
-            Application.Current.Dispatcher.Invoke(() => progressWindow.Close());
             Application.Current.Shutdown();
         }
     }
