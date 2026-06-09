@@ -44,6 +44,7 @@ namespace Ramza_EBike_Swabi.Views.Pages
         public decimal CommissionPercent { get; set; } = 8;
         public decimal TaxOnCommissionPercent { get; set; } = 12;
         public decimal ExtraDiscountPercent { get; set; } = 2;
+        public bool IsIncentiveBike { get; set; } = false; // ← ADD KARO
     }
 
     public partial class VendorBillForm : Page
@@ -256,7 +257,8 @@ namespace Ramza_EBike_Swabi.Views.Pages
                         BillRate = i.BillRate,
                         CommissionPercent = i.CommissionPercent,
                         TaxOnCommissionPercent = i.TaxOnCommissionPercent,
-                        ExtraDiscountPercent = i.ExtraDiscountPercent
+                        ExtraDiscountPercent = i.ExtraDiscountPercent,
+                        IsIncentiveBike = i.IsIncentiveBike, // ← ADD KARO
                     }).ToList()
             };
 
@@ -313,7 +315,8 @@ namespace Ramza_EBike_Swabi.Views.Pages
                         BillRate = d.BillRate,
                         CommissionPercent = d.CommissionPercent,
                         TaxOnCommissionPercent = d.TaxOnCommissionPercent,
-                        ExtraDiscountPercent = d.ExtraDiscountPercent
+                        ExtraDiscountPercent = d.ExtraDiscountPercent,
+                         IsIncentiveBike = d.IsIncentiveBike, // ← ADD KARO
                     });
 
                 AddEmptyRow();
@@ -569,12 +572,6 @@ namespace Ramza_EBike_Swabi.Views.Pages
             }, System.Windows.Threading.DispatcherPriority.Background);
         }
 
-        // ===========================
-        // CALCULATION
-        // ===========================
-        // ===========================
-        // CALCULATION
-        // ===========================
         private void RecalculateAll()
         {
             decimal total = 0, totalCommission = 0, totalTax = 0;
@@ -583,59 +580,59 @@ namespace Ramza_EBike_Swabi.Views.Pages
             {
                 if (item.Qty <= 0) item.Qty = 1;
 
-                if (item.IsFlatPrice)
+                if (item.IsIncentiveBike)
                 {
-                    // ===== FLAT PRICE MODE =====
-                    // BillRate = Retail Price (what customer pays)
-                    // FlatPurchasePrice = Purchase Price (what we pay vendor)
-                    // No percentages applied
-
-                    if (item.FlatPurchasePrice < 0) item.FlatPurchasePrice = 0;
-                    if (item.BillRate < 0) item.BillRate = 0;
-
-                    // Set all commission/tax amounts to zero
+                    // ===== INCENTIVE BIKE =====
+                    // Purchase price = 0 (free se mili)
+                    // BillRate = Retail price (user enter karega)
+                    // Bill total mein count nahi hogi
+                    item.IsFlatPrice = true;
+                    item.FlatPurchasePrice = 0;
                     item.CommissionAmount = 0;
                     item.TaxOnCommissionAmount = 0;
                     item.ExtraCommissionAmount = 0;
                     item.FinalCommissionAmount = 0;
                     item.TotalCommissionAmount = 0;
-
-                    // Total purchase cost = flat purchase price × quantity
-                    item.TotalWholesalePrice = item.FlatPurchasePrice * item.Qty;
-
-                    // RetailSalePrice mirrors BillRate for consistency
+                    item.TotalWholesalePrice = 0; // Bill amount mein zero
                     item.RetailSalePrice = item.BillRate;
+                    // Total mein add NAHI karte
+                }
+                else if (item.IsFlatPrice)
+                {
+                    if (item.FlatPurchasePrice < 0) item.FlatPurchasePrice = 0;
+                    if (item.BillRate < 0) item.BillRate = 0;
+
+                    item.CommissionAmount = 0;
+                    item.TaxOnCommissionAmount = 0;
+                    item.ExtraCommissionAmount = 0;
+                    item.FinalCommissionAmount = 0;
+                    item.TotalCommissionAmount = 0;
+                    item.TotalWholesalePrice = item.FlatPurchasePrice * item.Qty;
+                    item.RetailSalePrice = item.BillRate;
+
+                    total += item.TotalWholesalePrice;
+                    totalCommission += item.TotalCommissionAmount;
+                    totalTax += item.TaxOnCommissionAmount * item.Qty;
                 }
                 else
                 {
-                    // ===== PERCENTAGE MODE =====
-                    // BillRate = Retail Price (what customer pays)
-                    // Percentages applied to calculate Purchase Price
-
                     if (item.BillRate < 0) item.BillRate = 0;
 
                     decimal retailPrice = item.BillRate;
 
-                    // Calculate discounts from retail price
                     item.CommissionAmount = retailPrice * item.CommissionPercent / 100m;
                     item.TaxOnCommissionAmount = item.CommissionAmount * item.TaxOnCommissionPercent / 100m;
                     item.ExtraCommissionAmount = (retailPrice - item.CommissionAmount) * item.ExtraDiscountPercent / 100m;
                     item.FinalCommissionAmount = item.CommissionAmount + item.ExtraCommissionAmount;
                     item.TotalCommissionAmount = item.FinalCommissionAmount * item.Qty;
-
-                    // Purchase Price = Retail Price - Commission + Tax
                     item.TotalWholesalePrice = ((retailPrice - item.FinalCommissionAmount) + item.TaxOnCommissionAmount) * item.Qty;
-
-                    // Store retail price
                     item.RetailSalePrice = retailPrice;
-
-                    // Clear flat purchase (not used in percentage mode)
                     item.FlatPurchasePrice = 0;
-                }
 
-                total += item.TotalWholesalePrice;
-                totalCommission += item.TotalCommissionAmount;
-                totalTax += item.TaxOnCommissionAmount * item.Qty;
+                    total += item.TotalWholesalePrice;
+                    totalCommission += item.TotalCommissionAmount;
+                    totalTax += item.TaxOnCommissionAmount * item.Qty;
+                }
             }
 
             ItemsGrid.Items.Refresh();
@@ -944,7 +941,41 @@ namespace Ramza_EBike_Swabi.Views.Pages
                 if (!success) throw new InvalidOperationException(message);
             }
         }
+        private void IncentiveCheckbox_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (sender is not CheckBox cb) return;
+                if (cb.DataContext is not VendorBillItem item) return;
 
+                // Commit current edit pehle
+                ItemsGrid.CommitEdit(DataGridEditingUnit.Row, true);
+
+                bool isIncentive = cb.IsChecked == true;
+                item.IsIncentiveBike = isIncentive;
+
+                if (isIncentive)
+                {
+                    item.IsFlatPrice = true;
+                    item.FlatPurchasePrice = 0;
+                    item.CommissionPercent = 0;
+                    item.TaxOnCommissionPercent = 0;
+                    item.ExtraDiscountPercent = 0;
+                }
+
+                Dispatcher.InvokeAsync(() =>
+                {
+                    RecalculateAll();
+                    ItemsGrid.Items.Refresh();
+                    SaveDraftIfDirty();
+                }, System.Windows.Threading.DispatcherPriority.Background);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error: {ex.Message}", "Debug",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
         private void Back_Click(object sender, RoutedEventArgs e)
         {
             if (!_editingBillId.HasValue) SaveDraft();

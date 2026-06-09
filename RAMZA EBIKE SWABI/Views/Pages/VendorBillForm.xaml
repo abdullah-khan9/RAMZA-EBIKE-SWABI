@@ -134,6 +134,18 @@
                 <DataGridCheckBoxColumn Header="Flat Price?" 
                                         Binding="{Binding IsFlatPrice, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                         Width="85"/>
+                
+                <!-- ===== INCENTIVE BIKE CHECKBOX ===== -->
+                <DataGridTemplateColumn Header="🎁 Incentive?" Width="90">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <CheckBox IsChecked="{Binding IsIncentiveBike, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                      HorizontalAlignment="Center"
+                      VerticalAlignment="Center"
+                      Click="IncentiveCheckbox_Click"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
 
                 <!-- ===== FINANCIAL COLUMNS ===== -->
                 <DataGridTextColumn Header="Qty"
@@ -302,7 +314,7 @@
                 </StackPanel>
 
             </StackPanel>
-        </Border>
+        </Border>   
 
         <!-- ================= BUTTONS ================= -->
         <StackPanel Grid.Row="5" Orientation="Horizontal"
