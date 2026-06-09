@@ -49,7 +49,8 @@ namespace Ramza_EBike_Swabi.Services
             // Sum all wholesale costs by matching each item in vendor records
             decimal totalWholesaleCost = 0m;
             var missingWholesale = new List<string>();
-
+            // Incentive bikes check karo
+            var incentiveBikeModels = new List<string>();
             foreach (var item in validItems)
             {
                 VendorBillItem? vendorItem = null;
@@ -65,9 +66,15 @@ namespace Ramza_EBike_Swabi.Services
                         .FirstOrDefaultAsync(v => v.ChassisNumber == item.ChassisNumber);
 
                 if (vendorItem != null)
+                {
                     totalWholesaleCost += vendorItem.TotalWholesalePrice;
+                    if (vendorItem.IsIncentiveBike)
+                        incentiveBikeModels.Add(item.Model);
+                }
                 else
+                {
                     missingWholesale.Add(item.Model);
+                }
             }
 
             decimal discount = invoice.Discount;
@@ -77,9 +84,19 @@ namespace Ramza_EBike_Swabi.Services
                 .Select(i => string.IsNullOrWhiteSpace(i.Model) ? "Unknown" : i.Model)
                 .Distinct());
 
-            string? remarks = null;
+            // ── Remarks build karo ──────────────────────────────────────
+            var remarkParts = new List<string>();
+
+            if (incentiveBikeModels.Count > 0)
+                remarkParts.Add($"🎁 Incentive Bike(s) included: {string.Join(", ", incentiveBikeModels)} " +
+                                $"(Purchase cost = 0, full sale price = profit)");
+
             if (missingWholesale.Count > 0)
-                remarks = $"Wholesale cost not found for: {string.Join(", ", missingWholesale)}";
+                remarkParts.Add($"Wholesale cost not found for: {string.Join(", ", missingWholesale)}");
+
+            string? remarks = remarkParts.Count > 0
+                ? string.Join(" | ", remarkParts)
+                : null;
 
             db.ProfitRecords.Add(new ProfitRecord
             {

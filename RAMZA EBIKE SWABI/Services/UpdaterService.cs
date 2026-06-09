@@ -10,7 +10,7 @@ namespace Ramza_EBike_Swabi.Services
     {
         private const string GitHubUser = "abdullah-khan9";
         private const string GitHubRepo = "RAMZA-EBIKE-SWABI";
-        public const string CurrentVersion = "1.0.3";
+        public const string CurrentVersion = "1.0.4";
 
         // ── Sirf button click se call hoga ──────────────────────────────
         public static async Task CheckForUpdatesManualAsync()

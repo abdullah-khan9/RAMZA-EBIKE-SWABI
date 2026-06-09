@@ -14,8 +14,8 @@ namespace Ramza_EBike_Swabi.Services
 
         // ================= ADD =================
         public async Task<bool> AddInvoiceAsync(
-            CustomerInvoice invoice,
-            List<CustomerInvoiceItem> items)
+    CustomerInvoice invoice,
+    List<CustomerInvoiceItem> items)
         {
             using var db = new AppDbContext();
 
@@ -26,7 +26,6 @@ namespace Ramza_EBike_Swabi.Services
             db.CustomerInvoices.Add(invoice);
             await db.SaveChangesAsync();
 
-            // ✅ Remove sold bikes from inventory
             var soldBikeIds = invoice.Items
                 .Where(i => i.BikeId.HasValue)
                 .Select(i => i.BikeId!.Value)
@@ -37,13 +36,15 @@ namespace Ramza_EBike_Swabi.Services
                 var bikesToRemove = await db.Bikes
                     .Where(b => soldBikeIds.Contains(b.BikeId))
                     .ToListAsync();
-
                 db.Bikes.RemoveRange(bikesToRemove);
                 await db.SaveChangesAsync();
             }
 
             await _profitService.RecordProfitForInvoiceAsync(
                 invoice, invoice.Items.ToList(), isEdit: false);
+
+            // ← Incentive bike account remark — SAME db use karo
+            await AddIncentiveBikeAccountRemarkAsync(db, invoice, invoice.Items.ToList());
 
             return true;
         }
@@ -116,9 +117,77 @@ namespace Ramza_EBike_Swabi.Services
             await _profitService.RecordProfitForInvoiceAsync(
                 existing, existing.Items.ToList(), isEdit: true);
 
+            await AddIncentiveBikeAccountRemarkAsync(db, existing, existing.Items.ToList());
             return true;
         }
 
+        private async Task AddIncentiveBikeAccountRemarkAsync(
+     AppDbContext db,
+     CustomerInvoice invoice,
+     List<CustomerInvoiceItem> items)
+        {
+            var incentiveBikes = new List<string>();
+
+            foreach (var item in items.Where(i => !string.IsNullOrWhiteSpace(i.MotorNumber)))
+            {
+                VendorBillItem? vendorItem = null;
+
+                if (!string.IsNullOrWhiteSpace(item.MotorNumber))
+                    vendorItem = await db.VendorBillItem
+                        .IgnoreQueryFilters()
+                        .FirstOrDefaultAsync(v => v.MotorNumber == item.MotorNumber);
+
+                if (vendorItem == null && !string.IsNullOrWhiteSpace(item.ChassisNumber))
+                    vendorItem = await db.VendorBillItem
+                        .IgnoreQueryFilters()
+                        .FirstOrDefaultAsync(v => v.ChassisNumber == item.ChassisNumber);
+
+                if (vendorItem?.IsIncentiveBike == true)
+                    incentiveBikes.Add(item.Model);
+            }
+
+            if (incentiveBikes.Count == 0) return;
+
+            // ← Customer name safely lo
+            string customerName = invoice.Customer?.Name ?? "";
+            if (string.IsNullOrWhiteSpace(customerName))
+            {
+                var customer = await db.Customers.FindAsync(invoice.CustomerId);
+                customerName = customer?.Name ?? "";
+            }
+
+            string invoiceRef = $"INV-{invoice.CustomerInvoiceId:D4}";
+            string incentiveNote = $" | 🎁 Incentive Bike Sold: {string.Join(", ", incentiveBikes)}";
+
+            var recentTxns = await db.AccountTransactions
+                .OrderByDescending(t => t.Id)
+                .Take(5)
+                .ToListAsync();
+
+            bool anyUpdated = false;
+
+            foreach (var txn in recentTxns)
+            {
+                if (txn.Remarks != null &&
+                    !txn.Remarks.Contains("🎁") &&
+                    (txn.Remarks.Contains(customerName) ||
+                     txn.Remarks.Contains(invoiceRef)))
+                {
+                    txn.Remarks += incentiveNote;
+                    anyUpdated = true;
+                }
+            }
+
+            // Agar koi match nahi mila to last transaction update karo
+            if (!anyUpdated && recentTxns.Any())
+            {
+                var last = recentTxns.First();
+                if (last.Remarks != null && !last.Remarks.Contains("🎁"))
+                    last.Remarks += incentiveNote;
+            }
+
+            await db.SaveChangesAsync();
+        }
         // ================= GET ALL =================
         public async Task<List<CustomerInvoice>> GetAllInvoicesAsync()
         {

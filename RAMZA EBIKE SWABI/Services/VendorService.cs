@@ -123,11 +123,45 @@ namespace Ramza_EBike_Swabi.Services
             await db.SaveChangesAsync();
 
             await SyncBikesFromBillAsync(bill, db, bill.VendorId);
+            // Incentive bikes ko VendorIncentives mein record karo
+            await RecordIncentiveBikesAsync(bill, db);
             await UpsertBikeModelsFromBillAsync(bill.Items);
 
             return bill;
         }
 
+        private async Task RecordIncentiveBikesAsync(VendorBill bill, AppDbContext db)
+        {
+            var incentiveItems = bill.Items
+                .Where(i => i.IsIncentiveBike && !string.IsNullOrWhiteSpace(i.Model))
+                .ToList();
+
+            if (!incentiveItems.Any()) return;
+
+            var vendor = await db.Vendor.FindAsync(bill.VendorId);
+            string vendorName = vendor?.VendorName ?? "";
+
+            foreach (var item in incentiveItems)
+            {
+                var incentive = new VendorIncentive
+                {
+                    VendorId = bill.VendorId,
+                    VendorName = vendorName,
+                    IncentiveName = $"Bike Gift — {item.Model}",
+                    Amount = item.BillRate * item.Qty, // Retail value
+                    Destination = IncentiveDestination.Gift,
+                    IncentiveDate = bill.BillDate,
+                    Remarks = $"Incentive bike from bill #{bill.Id} | " +
+                                    $"Model: {item.Model} | " +
+                                    $"Chassis: {item.ChassisNumber} | " +
+                                    $"Motor: {item.MotorNumber} | " +
+                                    $"Retail Value: PKR {item.BillRate * item.Qty:N2}"
+                };
+                db.VendorIncentives.Add(incentive);
+            }
+
+            await db.SaveChangesAsync();
+        }
         // ===========================
         // UPDATE BILL
         // ===========================
@@ -158,7 +192,7 @@ namespace Ramza_EBike_Swabi.Services
             await RecalculateVendorBillsAsync(existing.VendorId);
             await SyncBikesFromBillAsync(existing, db, existing.VendorId);
             await UpsertBikeModelsFromBillAsync(existing.Items);
-
+            await UpdateIncentiveBikesOnEditAsync(existing, db);
             return existing;
         }
 
@@ -174,7 +208,46 @@ namespace Ramza_EBike_Swabi.Services
             await db.SaveChangesAsync();
             await RecalculateVendorBillsAsync(bill.VendorId);
         }
+        private async Task UpdateIncentiveBikesOnEditAsync(VendorBill bill, AppDbContext db)
+        {
+            var vendor = await db.Vendor.FindAsync(bill.VendorId);
+            string vendorName = vendor?.VendorName ?? "";
 
+            // Pehle is bill ke purane incentive records delete karo
+            var oldIncentives = await db.VendorIncentives
+                .Where(i => i.Remarks != null &&
+                            i.Remarks.Contains($"bill #{bill.Id}") &&
+                            i.Destination == IncentiveDestination.Gift)
+                .ToListAsync();
+
+            db.VendorIncentives.RemoveRange(oldIncentives);
+            await db.SaveChangesAsync();
+
+            // Naye incentive bikes record karo
+            var incentiveItems = bill.Items
+                .Where(i => i.IsIncentiveBike && !string.IsNullOrWhiteSpace(i.Model))
+                .ToList();
+
+            foreach (var item in incentiveItems)
+            {
+                db.VendorIncentives.Add(new VendorIncentive
+                {
+                    VendorId = bill.VendorId,
+                    VendorName = vendorName,
+                    IncentiveName = $"Bike Gift — {item.Model}",
+                    Amount = item.BillRate * item.Qty,
+                    Destination = IncentiveDestination.Gift,
+                    IncentiveDate = bill.BillDate,
+                    Remarks = $"Incentive bike from bill #{bill.Id} | " +
+                                    $"Model: {item.Model} | " +
+                                    $"Chassis: {item.ChassisNumber} | " +
+                                    $"Motor: {item.MotorNumber} | " +
+                                    $"Retail Value: PKR {item.BillRate * item.Qty:N2}"
+                });
+            }
+
+            await db.SaveChangesAsync();
+        }
         public async Task RestoreBillAsync(int billId)
         {
             using var db = new AppDbContext();
@@ -211,18 +284,26 @@ namespace Ramza_EBike_Swabi.Services
         // ===========================
         // ITEM CALCULATION
         // ===========================
-       
+
         private void CalculateItem(VendorBillItem item)
         {
             decimal qty = item.Qty <= 0 ? 1 : item.Qty;
 
-            if (item.IsFlatPrice)
+            if (item.IsIncentiveBike)
             {
-                // ===== FLAT PRICE MODE =====
-                // BillRate = Retail Price
-                // FlatPurchasePrice = Purchase Price
-                // No percentages
-
+                // ===== INCENTIVE BIKE =====
+                item.IsFlatPrice = true;
+                item.FlatPurchasePrice = 0;
+                item.CommissionAmount = 0;
+                item.TaxOnCommissionAmount = 0;
+                item.ExtraCommissionAmount = 0;
+                item.FinalCommissionAmount = 0;
+                item.TotalCommissionAmount = 0;
+                item.TotalWholesalePrice = 0; // Bill mein zero
+                item.RetailSalePrice = item.BillRate;
+            }
+            else if (item.IsFlatPrice)
+            {
                 item.CommissionAmount = 0;
                 item.TaxOnCommissionAmount = 0;
                 item.ExtraCommissionAmount = 0;
@@ -233,10 +314,6 @@ namespace Ramza_EBike_Swabi.Services
             }
             else
             {
-                // ===== PERCENTAGE MODE =====
-                // BillRate = Retail Price
-                // Calculate Purchase Price from percentages
-
                 decimal retailPrice = item.BillRate;
 
                 item.CommissionAmount = retailPrice * item.CommissionPercent / 100m;
@@ -245,12 +322,10 @@ namespace Ramza_EBike_Swabi.Services
                 item.FinalCommissionAmount = item.CommissionAmount + item.ExtraCommissionAmount;
                 item.TotalCommissionAmount = item.FinalCommissionAmount * qty;
                 item.TotalWholesalePrice = ((retailPrice - item.FinalCommissionAmount) + item.TaxOnCommissionAmount) * qty;
-
                 item.RetailSalePrice = retailPrice;
                 item.FlatPurchasePrice = 0;
             }
         }
-
         // ===========================
         // AUTO BIKE SYNC
         // ===========================
@@ -274,7 +349,8 @@ namespace Ramza_EBike_Swabi.Services
 
                 // ===== BIKE PRICE = ALWAYS BillRate (Retail Price) =====
                 // In both modes, BillRate represents the retail/sale price
-                decimal bikePrice = item.BillRate;
+                // ===== INCENTIVE BIKE: Price = BillRate, WholesalePrice = 0 =====
+                decimal bikePrice = item.BillRate; // Retail price — same for both
 
                 if (existing != null)
                 {
@@ -287,8 +363,9 @@ namespace Ramza_EBike_Swabi.Services
                     existing.Color = item.Color;
                     existing.Warranty = item.Warranty;
                     existing.Quantity = item.Qty;
-                    existing.Price = bikePrice; // Always BillRate (retail price)
+                    existing.Price = bikePrice;
                     existing.VendorName = vName;
+                    existing.IsIncentiveBike = item.IsIncentiveBike; // ← ADD KARO
                 }
                 else
                 {
@@ -303,9 +380,10 @@ namespace Ramza_EBike_Swabi.Services
                         Color = item.Color,
                         Warranty = item.Warranty,
                         Quantity = item.Qty,
-                        Price = bikePrice, // Always BillRate (retail price)
+                        Price = bikePrice,
                         VendorName = vName,
-                        AddedDate = DateTime.UtcNow
+                        AddedDate = DateTime.UtcNow,
+                        IsIncentiveBike = item.IsIncentiveBike // ← ADD KARO
                     });
                 }
             }
