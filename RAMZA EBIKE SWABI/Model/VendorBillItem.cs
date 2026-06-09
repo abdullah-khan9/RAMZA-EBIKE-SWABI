@@ -66,5 +66,9 @@ namespace Ramza_EBike_Swabi.Models
 
         [Column(TypeName = "decimal(18,2)")]
         public decimal TotalWholesalePrice { get; set; }
+        // Existing properties ke baad yeh add karo:
+
+        // ===== INCENTIVE BIKE =====
+        public bool IsIncentiveBike { get; set; } = false;
     }
 }

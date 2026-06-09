@@ -42,5 +42,7 @@ namespace Ramza_EBike_Swabi.Models
 
         // System
         public DateTime AddedDate { get; set; } = DateTime.UtcNow;
+        // Existing properties ke baad:
+        public bool IsIncentiveBike { get; set; } = false;
     }
 }
