@@ -45,11 +45,12 @@
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="200"/>
                         <ColumnDefinition Width="200"/>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="Auto"/>
-                    </Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
 
                     <StackPanel Grid.Column="0">
                         <TextBlock x:Name="VendorName" FontSize="20" FontWeight="Bold"/>
@@ -75,23 +76,30 @@
                             FontWeight="Bold" BorderThickness="0"
                             Cursor="Hand" Click="PayRemaining_Click"
                             ToolTip="Make a payment towards this vendor's outstanding bill balance"/>
-
-                    <Button Grid.Column="4"
+                <Button Grid.Column="4"
+Content="📒 Vendor Ledger"
+Width="145" Height="40" Margin="0 0 8 0"
+Background="#FF00695C" Foreground="White"
+FontWeight="Bold" BorderThickness="0"
+Cursor="Hand" Click="VendorLedger_Click"
+ToolTip="Is vendor ka mukammal hisab kitab dekhen"/>
+                <Button Grid.Column="5"
                             Content="📋 Pay History"
                             Width="135" Height="40" Margin="0 0 8 0"
                             Background="#FF6A1B9A" Foreground="White"
                             FontWeight="Bold" BorderThickness="0"
                             Cursor="Hand" Click="PaymentHistory_Click"
                             ToolTip="View all payments made to this vendor"/>
+               
 
-                    <Button Grid.Column="5" Content="Close All Bills"
+                <Button Grid.Column="6" Content="Close All Bills"
                             Width="140" Height="40" Margin="0 0 8 0"
                             Background="#FFB71C1C" Foreground="White"
                             FontWeight="Bold" BorderThickness="0"
                             Cursor="Hand" Click="CloseBills_Click"
                             ToolTip="Delete all bill records and reset this vendor's balance to zero"/>
 
-                    <Button Grid.Column="6" Content="Add New Bill"
+                    <Button Grid.Column="7" Content="Add New Bill"
                             Width="155" Height="40"
                             Background="#FF1B4079" Foreground="White"
                             FontWeight="Bold" BorderThickness="0"

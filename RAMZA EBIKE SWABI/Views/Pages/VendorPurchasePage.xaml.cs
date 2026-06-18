@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.Rebar;
 
 namespace Ramza_EBike_Swabi.Views.Pages
 {
@@ -29,7 +30,6 @@ namespace Ramza_EBike_Swabi.Views.Pages
 
         // NetBill = PreviousBalance + TotalAmount − AmountPaid (bill-level only)
         public decimal NetBill => PreviousBalance + TotalAmount - AmountPaid;
-
         public decimal RemainingBalance => Bill?.RemainingBalance ?? 0m;
         public decimal TotalCommission => Bill?.TotalCommission ?? 0m;
         public decimal TotalTaxPaid => Bill?.TotalTaxPaid ?? 0m;
@@ -133,7 +133,7 @@ namespace Ramza_EBike_Swabi.Views.Pages
                     2 => row.Bill.Items.Any(i => i.ChassisNumber?.ToLower().Contains(kw) == true),
                     3 => row.Bill.Items.Any(i => i.MotorNumber?.ToLower().Contains(kw) == true),
                     _ => false
-                };
+                };   
 
                 row.IsMatch = matched;
                 if (matched) matchCount++;
@@ -180,6 +180,15 @@ namespace Ramza_EBike_Swabi.Views.Pages
                 // Reload the full page so header balance updates immediately
                 LoadVendor(_vendor.Id);
             }
+        }
+
+        
+
+
+    private void VendorLedger_Click(object sender, RoutedEventArgs e)
+        {
+            if (_vendor == null) return;
+            _layout.Navigate(new VendorLedgerPage(_layout, _vendor.Id, _vendor.VendorName));
         }
 
         // ===========================
