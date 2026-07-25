@@ -2,6 +2,7 @@
 using Ramza_EBike_Swabi.Models;
 using Ramza_EBike_Swabi.Services;
 using Ramza_EBike_Swabi.Services.Pdf;
+using Ramza_EBike_Swabi.Views.Windows;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -20,6 +21,7 @@ namespace Ramza_EBike_Swabi.Views.Pages
         private readonly InvoiceService _invoiceService = new();
         private readonly AccountService _accountService = new();
         private readonly InvoiceDraftService _draftService = new();
+        private readonly InstalmentService _instalmentService = new();
 
         private InvoiceTabManagerPage? _tabManager;
         private CustomerInvoice? _editingInvoice;
@@ -32,11 +34,22 @@ namespace Ramza_EBike_Swabi.Views.Pages
         private System.Windows.Threading.DispatcherTimer? _autoSaveTimer;
         private bool _suppressMotorChanged = false;
         private bool _suppressDirty = false;
+        private bool _pageLoaded = false; // Page fully loaded hone ka flag
 
         private TextBox? _activeMotorBox;
         private Popup? _activeMotorPopup;
         private ListBox? _activeMotorList;
         private CustomerInvoiceItem? _activeItem;
+
+        private List<InvoiceInstalment> _pendingInstalments = new();
+
+        // ✅ Snapshot of the instalment plan already saved in the DB for the invoice being
+        // edited (read-only — never passed to SaveInstalmentsAsync directly), plus a flag
+        // for whether the user explicitly rebuilt the plan this session via "Setup
+        // Instalments". Without this, editing an invoice with an existing plan silently left
+        // that plan unrecalculated even after NetBill/Remaining changed.
+        private List<InvoiceInstalment> _existingInstalmentsSnapshot = new();
+        private bool _instalmentsReplaced = false;
 
         public ObservableCollection<CustomerInvoiceItem> BillItems { get; } = new();
 
@@ -62,6 +75,9 @@ namespace Ramza_EBike_Swabi.Views.Pages
             };
 
             AddEmptyRow();
+
+            // Page load complete hone par flag set karo
+            Loaded += (_, __) => _pageLoaded = true;
         }
 
         public GenerateInvoicePage(CustomerInvoice invoice) : this()
@@ -207,6 +223,7 @@ namespace Ramza_EBike_Swabi.Views.Pages
         {
             if (!_suppressDirty) ScheduleAutoSave();
         }
+
         // ================== LOAD FOR EDIT ==================
         private void LoadInvoiceForEdit(CustomerInvoice invoice)
         {
@@ -219,7 +236,6 @@ namespace Ramza_EBike_Swabi.Views.Pages
             txtAddress.Text = invoice.Customer?.Address ?? string.Empty;
             txtDiscount.Text = invoice.Discount.ToString("N2");
 
-            // Backward compatible: old bills have AmountPaidCash=0 & AmountPaidAccount=0
             bool isLegacyBill = invoice.AmountPaidCash == 0 &&
                                  invoice.AmountPaidAccount == 0 &&
                                  invoice.AmountPaid > 0;
@@ -237,14 +253,9 @@ namespace Ramza_EBike_Swabi.Views.Pages
             if (txtRemarks != null) txtRemarks.Text = invoice.Remarks ?? string.Empty;
             if (dpDueDate != null) dpDueDate.SelectedDate = invoice.DueDate;
 
-            // ✅ Always reflect latest document issuance flags from the invoice object
-            // (guaranteed fresh when called from OpenInvoiceForEditAsync)
-            if (chkWarrantyCard != null)
-                chkWarrantyCard.IsChecked = invoice.WarrantyCardGiven;
-            if (chkVoucherCustomer != null)
-                chkVoucherCustomer.IsChecked = invoice.VoucherGivenToCustomer;
-            if (chkVoucherCompany != null)
-                chkVoucherCompany.IsChecked = invoice.VoucherIssuedByCompany;
+            if (chkWarrantyCard != null) chkWarrantyCard.IsChecked = invoice.WarrantyCardGiven;
+            if (chkVoucherCustomer != null) chkVoucherCustomer.IsChecked = invoice.VoucherGivenToCustomer;
+            if (chkVoucherCompany != null) chkVoucherCompany.IsChecked = invoice.VoucherIssuedByCompany;
 
             BillItems.Clear();
             if (invoice.Items != null)
@@ -257,13 +268,10 @@ namespace Ramza_EBike_Swabi.Views.Pages
             _isDirty = false;
         }
 
-        // ✅ NEW: Called from CustomerDuesPage Edit button — always fetches fresh from DB
         public async Task OpenInvoiceForEditAsync(CustomerInvoice invoice)
         {
             try
             {
-                // Re-fetch from DB to get latest WarrantyCardGiven / Voucher flags
-                // that may have been updated by IssueDocumentWindow after page load
                 using var db = new Data.AppDbContext();
                 var freshInvoice = await db.CustomerInvoices
                     .Include(i => i.Customer)
@@ -278,7 +286,33 @@ namespace Ramza_EBike_Swabi.Views.Pages
                 }
 
                 _editingInvoice = freshInvoice;
-                LoadInvoiceForEdit(freshInvoice);   // checkboxes now reflect DB truth
+                LoadInvoiceForEdit(freshInvoice);
+
+                // ✅ Load existing instalment plan (if any) purely as a read-only snapshot —
+                // used to detect staleness at save time. It is NOT reused for re-insertion;
+                // that only happens if the user explicitly redoes it via "Setup Instalments".
+                _existingInstalmentsSnapshot = await _instalmentService.GetInstalmentsAsync(freshInvoice.CustomerInvoiceId);
+                _instalmentsReplaced = false;
+                _pendingInstalments = new List<InvoiceInstalment>();
+
+                _suppressDirty = true;
+                if (_existingInstalmentsSnapshot.Any())
+                {
+                    decimal planTotal = _existingInstalmentsSnapshot.Sum(i => i.Amount);
+                    if (chkInstalments != null) chkInstalments.IsChecked = true;
+                    if (pnlInstalmentSummary != null) pnlInstalmentSummary.Visibility = Visibility.Visible;
+                    if (btnSetupInstalments != null) btnSetupInstalments.Visibility = Visibility.Visible;
+                    if (txtInstalmentSummary != null)
+                        txtInstalmentSummary.Text =
+                            $"✅ Existing plan: {_existingInstalmentsSnapshot.Count} instalments  |  Total: PKR {planTotal:N2}  " +
+                            "(tabdeeli ke liye 'Setup Instalments' dobara kholein)";
+                }
+                else
+                {
+                    if (chkInstalments != null) chkInstalments.IsChecked = false;
+                }
+                _suppressDirty = false;
+
                 _isDirty = false;
             }
             catch (Exception ex)
@@ -396,9 +430,8 @@ namespace Ramza_EBike_Swabi.Views.Pages
                 decimal discount = decimal.TryParse(txtDiscount?.Text, out var d) ? d : 0;
                 decimal paidCash = decimal.TryParse(txtPaidCash?.Text, out var pc) ? pc : 0;
                 decimal paidAccount = decimal.TryParse(txtPaidAccount?.Text, out var pa) ? pa : 0;
-                decimal totalPaid = paidCash + paidAccount;
                 decimal net = total - discount;
-                decimal remaining = net - totalPaid;
+                decimal remaining = net - paidCash - paidAccount;
 
                 if (txtTotal != null) txtTotal.Text = total.ToString("N2");
                 if (txtNetBill != null) txtNetBill.Text = net.ToString("N2");
@@ -467,12 +500,9 @@ namespace Ramza_EBike_Swabi.Views.Pages
 
                 decimal.TryParse(txtPaidCash?.Text, out decimal newPaidCash);
                 decimal.TryParse(txtPaidAccount?.Text, out decimal newPaidAccount);
-                decimal newPaidTotal = newPaidCash + newPaidAccount;
 
                 bool isEdit = _editingInvoice != null;
 
-                // ✅ Edit mode: purane Cash + Account amounts fetch karo
-                // Backward compatible: purane bills mein sirf AmountPaid hoga
                 decimal oldPaidCash = 0m;
                 decimal oldPaidAccount = 0m;
                 if (isEdit && _editingInvoice != null)
@@ -481,7 +511,6 @@ namespace Ramza_EBike_Swabi.Views.Pages
                                   _editingInvoice.AmountPaidAccount == 0 &&
                                   _editingInvoice.AmountPaid > 0;
 
-                    // Purana bill: pura AmountPaid cash mein treat karo
                     oldPaidCash = legacy ? _editingInvoice.AmountPaid : _editingInvoice.AmountPaidCash;
                     oldPaidAccount = legacy ? 0m : _editingInvoice.AmountPaidAccount;
                 }
@@ -498,7 +527,6 @@ namespace Ramza_EBike_Swabi.Views.Pages
                         string invoiceRef = $"INV-{invoice.CustomerInvoiceId:D4}";
                         string customerName = txtName.Text.Trim();
 
-                        // ✅ Cash aur Account alag alag transactions
                         if (newPaidCash > 0)
                             await _accountService.RecordInvoicePaymentAsync(
                                 newPaidCash, customerName, invoiceRef, isCash: true);
@@ -518,17 +546,41 @@ namespace Ramza_EBike_Swabi.Views.Pages
                         string invoiceRef = $"INV-{invoice.CustomerInvoiceId:D4}";
                         string customerName = txtName.Text.Trim();
 
-                        // ✅ Cash difference — purana vs naya
                         if (newPaidCash != oldPaidCash)
                             await _accountService.RecordInvoicePaymentEditAsync(
-                                oldPaidCash, newPaidCash,
-                                customerName, invoiceRef, isCash: true);
+                                oldPaidCash, newPaidCash, customerName, invoiceRef, isCash: true);
 
-                        // ✅ Account difference — purana vs naya
                         if (newPaidAccount != oldPaidAccount)
                             await _accountService.RecordInvoicePaymentEditAsync(
-                                oldPaidAccount, newPaidAccount,
-                                customerName, invoiceRef, isCash: false);
+                                oldPaidAccount, newPaidAccount, customerName, invoiceRef, isCash: false);
+                    }
+                }
+
+                // ── Instalments save — invoice save hone ke BAAD ──
+                // ✅ Only persist a NEW plan when the user explicitly rebuilt it this session
+                // (via "Setup Instalments" — those are fresh entities, safe to insert).
+                // An existing plan loaded from the DB is never blindly re-saved as-is;
+                // instead we check whether it still matches the (possibly changed)
+                // remaining balance and warn if it doesn't, so a stale plan is never silent.
+                if (success && chkInstalments?.IsChecked == true)
+                {
+                    if (_instalmentsReplaced && _pendingInstalments.Any())
+                    {
+                        await _instalmentService.SaveInstalmentsAsync(
+                            invoice.CustomerInvoiceId, _pendingInstalments);
+                    }
+                    else if (isEdit && _existingInstalmentsSnapshot.Any())
+                    {
+                        decimal planTotal = _existingInstalmentsSnapshot.Sum(i => i.Amount);
+                        decimal newRemaining = invoice.RemainingBalance;
+                        if (Math.Abs(planTotal - newRemaining) >= 1)
+                        {
+                            MessageBox.Show(
+                                $"Invoice save ho gayi hai, lekin is ke maujooda instalment plan ka total " +
+                                $"(PKR {planTotal:N2}) naye remaining balance (PKR {newRemaining:N2}) se match nahi karta.\n\n" +
+                                "Braye meherbani 'Setup Instalments' se plan dobara balance karein.",
+                                "Instalment Plan Out of Sync", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        }
                     }
                 }
 
@@ -573,7 +625,6 @@ namespace Ramza_EBike_Swabi.Views.Pages
         {
             decimal.TryParse(txtDiscount?.Text, out var discount);
 
-            // Agar directly call kiya bina params ke — fields se read karo
             if (paidCash == 0 && paidAccount == 0)
             {
                 decimal.TryParse(txtPaidCash?.Text, out paidCash);
@@ -590,7 +641,7 @@ namespace Ramza_EBike_Swabi.Views.Pages
 
             string paymentMethod = (paidCash > 0 && paidAccount > 0) ? "Cash + Account"
                                  : paidAccount > 0 ? "Account"
-                                                                       : "Cash";
+                                 : "Cash";
 
             string? accountDetail = txtAccountDetail?.Text?.Trim();
             string remarks = txtRemarks?.Text?.Trim() ?? string.Empty;
@@ -615,13 +666,12 @@ namespace Ramza_EBike_Swabi.Views.Pages
                 TotalAmount = validItems.Sum(i => i.TotalPrice),
                 Discount = discount,
                 NetBill = net,
-                // ✅ Tino fields set karo
                 AmountPaid = paid,
                 AmountPaidCash = paidCash,
                 AmountPaidAccount = paidAccount,
                 RemainingBalance = remaining,
                 Status = remaining <= 0 ? "Clear"
-                       : paid == 0 ? "Unpaid"
+                                       : paid == 0 ? "Unpaid"
                                        : "Partially Paid",
                 PaymentMethod = paymentMethod,
                 Remarks = remarks,
@@ -636,6 +686,7 @@ namespace Ramza_EBike_Swabi.Views.Pages
         private void ResetForm()
         {
             _suppressDirty = true;
+
             BillItems.Clear();
             AddEmptyRow();
 
@@ -650,10 +701,92 @@ namespace Ramza_EBike_Swabi.Views.Pages
             if (chkVoucherCustomer != null) chkVoucherCustomer.IsChecked = false;
             if (chkVoucherCompany != null) chkVoucherCompany.IsChecked = false;
 
+            // Instalment reset
+            _pendingInstalments.Clear();
+            _existingInstalmentsSnapshot.Clear();
+            _instalmentsReplaced = false;
+            if (chkInstalments != null) chkInstalments.IsChecked = false;
+            if (pnlInstalmentSummary != null) pnlInstalmentSummary.Visibility = Visibility.Collapsed;
+            if (btnSetupInstalments != null) btnSetupInstalments.Visibility = Visibility.Collapsed;
+            if (txtInstalmentSummary != null) txtInstalmentSummary.Text = "No instalment plan set.";
+
             _editingInvoice = null;
             _isDirty = false;
             _suppressDirty = false;
             Recalculate(null, null);
+        }
+
+        // ================== INSTALMENTS ==================
+        private void ChkInstalments_Changed(object sender, RoutedEventArgs e)
+        {
+            // Page fully load hone se pehle return karo — crash se bachao
+            if (!_pageLoaded) return;
+            if (pnlInstalmentSummary == null || btnSetupInstalments == null) return;
+
+            bool enabled = chkInstalments?.IsChecked == true;
+
+            pnlInstalmentSummary.Visibility = enabled ? Visibility.Visible : Visibility.Collapsed;
+            btnSetupInstalments.Visibility = enabled ? Visibility.Visible : Visibility.Collapsed;
+
+            if (!enabled)
+            {
+                _pendingInstalments.Clear();
+                if (txtInstalmentSummary != null)
+                    txtInstalmentSummary.Text = "No instalment plan set.";
+            }
+
+            if (!_suppressDirty) ScheduleAutoSave();
+        }
+
+        private void EditInstalmentPlan_Click(object sender, RoutedEventArgs e)
+        {
+            decimal.TryParse(
+                txtRemaining?.Text?.Replace(",", "").Replace("PKR", "").Trim(),
+                out decimal remaining);
+
+            if (remaining <= 0)
+            {
+                MessageBox.Show(
+                    "Pehle invoice ka remaining balance set karo (Net Bill - Payment).",
+                    "No Remaining Amount", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            string customerName = txtName?.Text?.Trim() ?? "Customer";
+
+            var win = new InstalmentWindow(
+                remaining,
+                customerName,
+                _editingInvoice?.CustomerInvoiceId ?? 0)
+            {
+                Owner = Window.GetWindow(this)
+            };
+
+            if (win.ShowDialog() == true) { 
+                _pendingInstalments = win.Result;
+                _instalmentsReplaced = true;
+                UpdateInstalmentSummary();
+                if (!_suppressDirty) ScheduleAutoSave();
+            }
+        }
+
+        private void UpdateInstalmentSummary()
+        {
+            if (txtInstalmentSummary == null) return;
+
+            if (!_pendingInstalments.Any())
+            {
+                txtInstalmentSummary.Text = "No instalment plan set.";
+                return;
+            }
+
+            int count = _pendingInstalments.Count;
+            decimal total = _pendingInstalments.Sum(i => i.Amount);
+            string first = _pendingInstalments.Min(i => i.DueDate).ToString("dd-MMM-yyyy");
+            string last = _pendingInstalments.Max(i => i.DueDate).ToString("dd-MMM-yyyy");
+
+            txtInstalmentSummary.Text =
+                $"✅ {count} instalments  |  Total: PKR {total:N2}  |  {first} → {last}";
         }
     }
 }

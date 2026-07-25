@@ -114,13 +114,13 @@ namespace Ramza_EBike_Swabi.Services
         // ===========================
         // INVOICE PAYMENT — NEW INVOICE
         // ===========================
-        public async Task RecordInvoicePaymentAsync(
+        public async Task<int?> RecordInvoicePaymentAsync(
             decimal amount,
             string customerName,
             string invoiceRef,
             bool isCash)
         {
-            if (amount <= 0) return;
+            if (amount <= 0) return null;
 
             using var db = new AppDbContext();
 
@@ -137,7 +137,7 @@ namespace Ramza_EBike_Swabi.Services
             else
                 balance.BankBalance += amount;
 
-            db.AccountTransactions.Add(new AccountTransaction
+            var txn = new AccountTransaction
             {
                 Type = isCash
                     ? TransactionType.CashDeposit
@@ -148,9 +148,11 @@ namespace Ramza_EBike_Swabi.Services
                 Remarks = $"{invoiceRef} | {customerName} | Invoice payment ({(isCash ? "Cash" : "Account")})",
                 CashBalanceAfter = balance.CashBalance,
                 BankBalanceAfter = balance.BankBalance
-            });
+            };
+            db.AccountTransactions.Add(txn);
 
             await db.SaveChangesAsync();
+            return txn.Id;
         }
 
         // ===========================

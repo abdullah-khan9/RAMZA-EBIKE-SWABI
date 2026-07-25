@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Media;
 using Microsoft.Win32;
 using ClosedXML.Excel;
 using Ramza_EBike_Swabi.Services;
@@ -13,7 +14,9 @@ namespace Ramza_EBike_Swabi.Views.Pages
     public partial class SearchInvoicePage : Page
     {
         private readonly InvoiceService _service = new();
+        private readonly InstalmentService _instalmentService = new();
         private MainLayout? _layout;
+        private bool _showingInstalments = false;
 
         public SearchInvoicePage()
         {
@@ -34,11 +37,12 @@ namespace Ramza_EBike_Swabi.Views.Pages
             {
                 var keyword = txtSearch.Text.Trim();
                 var invoices = await _service.GetAllInvoicesAsync();
+                var instalmentIds = await _instalmentService.GetInstalmentInvoiceIdsAsync();
 
                 DateTime from = dpFrom.SelectedDate ?? DateTime.MinValue;
                 DateTime to = dpTo.SelectedDate ?? DateTime.MaxValue;
 
-                dgInvoices.ItemsSource = invoices
+                var matched = invoices
                     .Where(i => i.Status == "Clear")
                     .Where(i => i.InvoiceDate.Date >= from.Date &&
                                 i.InvoiceDate.Date <= to.Date)
@@ -48,6 +52,14 @@ namespace Ramza_EBike_Swabi.Views.Pages
                                 (i.Customer?.CNIC?.Contains(keyword) == true) ||
                                 i.CustomerInvoiceId.ToString().Contains(keyword))
                     .ToList();
+
+                // ✅ Simple Customers = Clear invoices with no instalment plan.
+                // Instalment Customers = Clear invoices that DID have an instalment plan
+                // (i.e. they've now fully paid it off) — the two tabs stay mutually exclusive.
+                dgInvoices.ItemsSource = matched
+                    .Where(i => !instalmentIds.Contains(i.CustomerInvoiceId)).ToList();
+                dgInstalmentInvoices.ItemsSource = matched
+                    .Where(i => instalmentIds.Contains(i.CustomerInvoiceId)).ToList();
             }
             catch (Exception ex)
             {
@@ -63,12 +75,13 @@ namespace Ramza_EBike_Swabi.Views.Pages
             {
                 var keyword = txtSearch.Text.Trim();
                 var invoices = await _service.GetAllInvoicesAsync();
+                var instalmentIds = await _instalmentService.GetInstalmentInvoiceIdsAsync();
 
                 DateTime from = dpFrom.SelectedDate ?? DateTime.MinValue;
                 DateTime to = dpTo.SelectedDate ?? DateTime.MaxValue;
 
-                dgInvoices.ItemsSource = invoices
-                     .Where(i => i.Status == "Clear")
+                var matched = invoices
+                    .Where(i => i.Status == "Clear")
                     .Where(i => i.InvoiceDate.Date >= from.Date &&
                                 i.InvoiceDate.Date <= to.Date)
                     .Where(i => string.IsNullOrEmpty(keyword) ||
@@ -77,8 +90,52 @@ namespace Ramza_EBike_Swabi.Views.Pages
                                 (i.Customer?.CNIC?.Contains(keyword) == true) ||
                                 i.CustomerInvoiceId.ToString().Contains(keyword))
                     .ToList();
+
+                dgInvoices.ItemsSource = matched
+                    .Where(i => !instalmentIds.Contains(i.CustomerInvoiceId)).ToList();
+                dgInstalmentInvoices.ItemsSource = matched
+                    .Where(i => instalmentIds.Contains(i.CustomerInvoiceId)).ToList();
             }
             catch { }
+        }
+
+        // ── Tab switching ─────────────────────────────────────────────────────
+        private void TabSimple_Click(object sender, RoutedEventArgs e)
+        {
+            _showingInstalments = false;
+            dgInvoices.Visibility = Visibility.Visible;
+            dgInstalmentInvoices.Visibility = Visibility.Collapsed;
+            SetTabButtonStyles();
+        }
+
+        private void TabInstalment_Click(object sender, RoutedEventArgs e)
+        {
+            _showingInstalments = true;
+            dgInvoices.Visibility = Visibility.Collapsed;
+            dgInstalmentInvoices.Visibility = Visibility.Visible;
+            SetTabButtonStyles();
+        }
+
+        private void SetTabButtonStyles()
+        {
+            var activeBg = new SolidColorBrush(Color.FromRgb(0x2B, 0x57, 0x9A));
+            var inactiveBg = new SolidColorBrush(Color.FromRgb(0xE0, 0xE6, 0xED));
+            var inactiveFg = new SolidColorBrush(Color.FromRgb(0x44, 0x44, 0x44));
+
+            if (_showingInstalments)
+            {
+                btnTabInstalment.Background = activeBg;
+                btnTabInstalment.Foreground = Brushes.White;
+                btnTabSimple.Background = inactiveBg;
+                btnTabSimple.Foreground = inactiveFg;
+            }
+            else
+            {
+                btnTabSimple.Background = activeBg;
+                btnTabSimple.Foreground = Brushes.White;
+                btnTabInstalment.Background = inactiveBg;
+                btnTabInstalment.Foreground = inactiveFg;
+            }
         }
 
         private void Clear_Click(object sender, RoutedEventArgs e)
@@ -87,6 +144,7 @@ namespace Ramza_EBike_Swabi.Views.Pages
             dpFrom.SelectedDate = null;
             dpTo.SelectedDate = null;
             dgInvoices.ItemsSource = null;
+            dgInstalmentInvoices.ItemsSource = null;
         }
 
         // ===========================
@@ -172,6 +230,8 @@ namespace Ramza_EBike_Swabi.Views.Pages
             try
             {
                 var invoices = await _service.GetAllInvoicesAsync();
+                var instalmentIds = await _instalmentService.GetInstalmentInvoiceIdsAsync();
+
                 DateTime from = dpFrom.SelectedDate ?? DateTime.MinValue;
                 DateTime to = dpTo.SelectedDate ?? DateTime.MaxValue;
 
@@ -187,6 +247,12 @@ namespace Ramza_EBike_Swabi.Views.Pages
                     return;
                 }
 
+                // ✅ Same split used on-screen: Simple Customers = never had an instalment
+                // plan; Instalment Customers = Clear invoices that DID have one (i.e. paid
+                // off via instalments).
+                var simpleData = filtered.Where(i => !instalmentIds.Contains(i.CustomerInvoiceId)).ToList();
+                var instalmentData = filtered.Where(i => instalmentIds.Contains(i.CustomerInvoiceId)).ToList();
+
                 var dialog = new SaveFileDialog
                 {
                     Filter = "Excel File (*.xlsx)|*.xlsx",
@@ -196,7 +262,6 @@ namespace Ramza_EBike_Swabi.Views.Pages
                 if (dialog.ShowDialog() != true) return;
 
                 using var wb = new XLWorkbook();
-                var ws = wb.Worksheets.Add("Bike Sales");
 
                 var headerBg = XLColor.FromHtml("#2B579A");
                 var headerFg = XLColor.White;
@@ -208,172 +273,185 @@ namespace Ramza_EBike_Swabi.Views.Pages
                 var totalFg = XLColor.FromHtml("#1A237E");
                 var borderColor = XLColor.FromHtml("#B0BEC5");
 
-                int totalCols = 12;
-                int row = 1;
-
-                var titleRange = ws.Range(row, 1, row, totalCols);
-                titleRange.Merge();
-                titleRange.Value = "Swabi Enterprises";
-                titleRange.Style
-                    .Font.SetBold(true).Font.SetFontSize(16).Font.SetFontColor(titleFg)
-                    .Fill.SetBackgroundColor(titleBg)
-                    .Alignment.SetHorizontal(XLAlignmentHorizontalValues.Center)
-                    .Alignment.SetVertical(XLAlignmentVerticalValues.Center);
-                ws.Row(row).Height = 28;
-                row++;
-
                 string fromText = dpFrom.SelectedDate.HasValue
                     ? dpFrom.SelectedDate.Value.ToString("dd-MMM-yyyy") : "Start";
                 string toText = dpTo.SelectedDate.HasValue
                     ? dpTo.SelectedDate.Value.ToString("dd-MMM-yyyy") : "End";
 
-                var subRange = ws.Range(row, 1, row, totalCols);
-                subRange.Merge();
-                subRange.Value = $"Sales Report  |  {fromText}  →  {toText}";
-                subRange.Style
-                    .Font.SetFontSize(11).Font.SetFontColor(XLColor.FromHtml("#1E3A6E"))
-                    .Fill.SetBackgroundColor(subtitleBg)
-                    .Alignment.SetHorizontal(XLAlignmentHorizontalValues.Center)
-                    .Alignment.SetVertical(XLAlignmentVerticalValues.Center);
-                ws.Row(row).Height = 22;
-                row++;
-
-                var genRange = ws.Range(row, 1, row, totalCols);
-                genRange.Merge();
-                genRange.Value = $"Generated on: {DateTime.Now:dd-MMM-yyyy  HH:mm}";
-                genRange.Style
-                    .Font.SetFontSize(9).Font.SetItalic(true).Font.SetFontColor(XLColor.Gray)
-                    .Fill.SetBackgroundColor(XLColor.FromHtml("#FAFAFA"))
-                    .Alignment.SetHorizontal(XLAlignmentHorizontalValues.Right);
-                ws.Row(row).Height = 16;
-                row++;
-                row++; // blank spacer
-
-                int headerRow = row;
-                string[] headers =
+                // ── Local function: writes one sheet using the same layout/styling
+                // that this page always used, just parameterized by sheet + data ──
+                void WriteSheet(ClosedXML.Excel.IXLWorksheet ws, string subtitleLabel, List<CustomerInvoice> data)
                 {
-                    "Invoice #", "Invoice Date", "Customer Name", "CNIC",
-                    "Contact", "Bike Model", "Brand", "Motor No",
-                    "Chassis No", "Price (₨)", "Qty", "Total (₨)"
-                };
+                    int totalCols = 12;
+                    int row = 1;
 
-                for (int i = 0; i < headers.Length; i++)
-                {
-                    var cell = ws.Cell(row, i + 1);
-                    cell.Value = headers[i];
-                    cell.Style
-                        .Font.SetBold(true).Font.SetFontSize(10).Font.SetFontColor(headerFg)
-                        .Fill.SetBackgroundColor(headerBg)
+                    var titleRange = ws.Range(row, 1, row, totalCols);
+                    titleRange.Merge();
+                    titleRange.Value = "Swabi Enterprises";
+                    titleRange.Style
+                        .Font.SetBold(true).Font.SetFontSize(16).Font.SetFontColor(titleFg)
+                        .Fill.SetBackgroundColor(titleBg)
                         .Alignment.SetHorizontal(XLAlignmentHorizontalValues.Center)
-                        .Alignment.SetVertical(XLAlignmentVerticalValues.Center)
-                        .Border.SetOutsideBorder(XLBorderStyleValues.Thin)
-                        .Border.SetOutsideBorderColor(borderColor);
-                }
-                ws.Row(row).Height = 20;
-                row++;
+                        .Alignment.SetVertical(XLAlignmentVerticalValues.Center);
+                    ws.Row(row).Height = 28;
+                    row++;
 
-                int dataStartRow = row;
-                bool alternate = false;
+                    var subRange = ws.Range(row, 1, row, totalCols);
+                    subRange.Merge();
+                    subRange.Value = $"{subtitleLabel}  |  {fromText}  →  {toText}";
+                    subRange.Style
+                        .Font.SetFontSize(11).Font.SetFontColor(XLColor.FromHtml("#1E3A6E"))
+                        .Fill.SetBackgroundColor(subtitleBg)
+                        .Alignment.SetHorizontal(XLAlignmentHorizontalValues.Center)
+                        .Alignment.SetVertical(XLAlignmentVerticalValues.Center);
+                    ws.Row(row).Height = 22;
+                    row++;
 
-                foreach (var invoice in filtered)
-                {
-                    foreach (var item in invoice.Items
-                        .Where(i => !string.IsNullOrWhiteSpace(i.MotorNumber)))
+                    var genRange = ws.Range(row, 1, row, totalCols);
+                    genRange.Merge();
+                    genRange.Value = $"Generated on: {DateTime.Now:dd-MMM-yyyy  HH:mm}";
+                    genRange.Style
+                        .Font.SetFontSize(9).Font.SetItalic(true).Font.SetFontColor(XLColor.Gray)
+                        .Fill.SetBackgroundColor(XLColor.FromHtml("#FAFAFA"))
+                        .Alignment.SetHorizontal(XLAlignmentHorizontalValues.Right);
+                    ws.Row(row).Height = 16;
+                    row++;
+                    row++; // blank spacer
+
+                    int headerRow = row;
+                    string[] headers =
                     {
-                        var rowBg = alternate ? altRowBg : XLColor.White;
+                        "Invoice #", "Invoice Date", "Customer Name", "CNIC",
+                        "Contact", "Bike Model", "Brand", "Motor No",
+                        "Chassis No", "Price (₨)", "Qty", "Total (₨)"
+                    };
 
-                        object[] values =
-                        {
-                            invoice.CustomerInvoiceId,
-                            invoice.InvoiceDate.ToString("dd-MMM-yyyy"),
-                            invoice.Customer?.Name    ?? "-",
-                            invoice.Customer?.CNIC    ?? "-",
-                            invoice.Customer?.Contact ?? "-",
-                            item.Model,
-                            item.Brand,
-                            item.MotorNumber,
-                            item.ChassisNumber,
-                            item.Price,
-                            item.Quantity,
-                            item.TotalPrice
-                        };
-
-                        for (int col = 1; col <= values.Length; col++)
-                        {
-                            var cell = ws.Cell(row, col);
-                            cell.Value = values[col - 1] is decimal d
-                                ? XLCellValue.FromObject(d)
-                                : XLCellValue.FromObject(values[col - 1]);
-
-                            cell.Style
-                                .Fill.SetBackgroundColor(rowBg)
-                                .Font.SetFontSize(10)
-                                .Border.SetOutsideBorder(XLBorderStyleValues.Thin)
-                                .Border.SetOutsideBorderColor(borderColor);
-
-                            if (col == 10 || col == 11 || col == 12)
-                                cell.Style.Alignment.SetHorizontal(XLAlignmentHorizontalValues.Right);
-                            else
-                                cell.Style.Alignment.SetHorizontal(XLAlignmentHorizontalValues.Left);
-
-                            if (col == 10 || col == 12)
-                                cell.Style.NumberFormat.Format = "#,##0";
-                        }
-
-                        ws.Row(row).Height = 18;
-                        alternate = !alternate;
-                        row++;
+                    for (int i = 0; i < headers.Length; i++)
+                    {
+                        var cell = ws.Cell(row, i + 1);
+                        cell.Value = headers[i];
+                        cell.Style
+                            .Font.SetBold(true).Font.SetFontSize(10).Font.SetFontColor(headerFg)
+                            .Fill.SetBackgroundColor(headerBg)
+                            .Alignment.SetHorizontal(XLAlignmentHorizontalValues.Center)
+                            .Alignment.SetVertical(XLAlignmentVerticalValues.Center)
+                            .Border.SetOutsideBorder(XLBorderStyleValues.Thin)
+                            .Border.SetOutsideBorderColor(borderColor);
                     }
+                    ws.Row(row).Height = 20;
+                    row++;
+
+                    int dataStartRow = row;
+                    bool alternate = false;
+
+                    foreach (var invoice in data)
+                    {
+                        foreach (var item in invoice.Items
+                            .Where(i => !string.IsNullOrWhiteSpace(i.MotorNumber)))
+                        {
+                            var rowBg = alternate ? altRowBg : XLColor.White;
+
+                            object[] values =
+                            {
+                                invoice.CustomerInvoiceId,
+                                invoice.InvoiceDate.ToString("dd-MMM-yyyy"),
+                                invoice.Customer?.Name    ?? "-",
+                                invoice.Customer?.CNIC    ?? "-",
+                                invoice.Customer?.Contact ?? "-",
+                                item.Model,
+                                item.Brand,
+                                item.MotorNumber,
+                                item.ChassisNumber,
+                                item.Price,
+                                item.Quantity,
+                                item.TotalPrice
+                            };
+
+                            for (int col = 1; col <= values.Length; col++)
+                            {
+                                var cell = ws.Cell(row, col);
+                                cell.Value = values[col - 1] is decimal d
+                                    ? XLCellValue.FromObject(d)
+                                    : XLCellValue.FromObject(values[col - 1]);
+
+                                cell.Style
+                                    .Fill.SetBackgroundColor(rowBg)
+                                    .Font.SetFontSize(10)
+                                    .Border.SetOutsideBorder(XLBorderStyleValues.Thin)
+                                    .Border.SetOutsideBorderColor(borderColor);
+
+                                if (col == 10 || col == 11 || col == 12)
+                                    cell.Style.Alignment.SetHorizontal(XLAlignmentHorizontalValues.Right);
+                                else
+                                    cell.Style.Alignment.SetHorizontal(XLAlignmentHorizontalValues.Left);
+
+                                if (col == 10 || col == 12)
+                                    cell.Style.NumberFormat.Format = "#,##0";
+                            }
+
+                            ws.Row(row).Height = 18;
+                            alternate = !alternate;
+                            row++;
+                        }
+                    }
+
+                    int dataEndRow = row - 1;
+
+                    var totalLabelRange = ws.Range(row, 1, row, 9);
+                    totalLabelRange.Merge();
+                    totalLabelRange.Value = "GRAND TOTAL";
+                    totalLabelRange.Style
+                        .Font.SetBold(true).Font.SetFontSize(11).Font.SetFontColor(totalFg)
+                        .Fill.SetBackgroundColor(totalBg)
+                        .Alignment.SetHorizontal(XLAlignmentHorizontalValues.Right)
+                        .Border.SetOutsideBorder(XLBorderStyleValues.Medium)
+                        .Border.SetOutsideBorderColor(XLColor.FromHtml("#2B579A"));
+
+                    var qtyCell = ws.Cell(row, 11);
+                    qtyCell.FormulaA1 = $"=SUM(K{dataStartRow}:K{dataEndRow})";
+                    qtyCell.Style
+                        .Font.SetBold(true).Font.SetFontSize(11).Font.SetFontColor(totalFg)
+                        .Fill.SetBackgroundColor(totalBg)
+                        .Alignment.SetHorizontal(XLAlignmentHorizontalValues.Right)
+                        .Border.SetOutsideBorder(XLBorderStyleValues.Medium)
+                        .Border.SetOutsideBorderColor(XLColor.FromHtml("#2B579A"));
+
+                    var totalCell = ws.Cell(row, 12);
+                    totalCell.FormulaA1 = $"=SUM(L{dataStartRow}:L{dataEndRow})";
+                    totalCell.Style
+                        .Font.SetBold(true).Font.SetFontSize(11).Font.SetFontColor(totalFg)
+                        .Fill.SetBackgroundColor(totalBg)
+                        .Alignment.SetHorizontal(XLAlignmentHorizontalValues.Right)
+                        .NumberFormat.Format = "#,##0";
+                    totalCell.Style
+                        .Border.SetOutsideBorder(XLBorderStyleValues.Medium)
+                        .Border.SetOutsideBorderColor(XLColor.FromHtml("#2B579A"));
+
+                    ws.Row(row).Height = 22;
+
+                    ws.Column(1).Width = 10;
+                    ws.Column(2).Width = 15;
+                    ws.Column(3).Width = 22;
+                    ws.Column(4).Width = 18;
+                    ws.Column(5).Width = 14;
+                    ws.Column(6).Width = 16;
+                    ws.Column(7).Width = 12;
+                    ws.Column(8).Width = 16;
+                    ws.Column(9).Width = 16;
+                    ws.Column(10).Width = 13;
+                    ws.Column(11).Width = 6;
+                    ws.Column(12).Width = 14;
+
+                    ws.SheetView.FreezeRows(headerRow);
                 }
 
-                int dataEndRow = row - 1;
+                // ✅ Sheet 1: Simple Customers (always created, even if empty, so the
+                // workbook always has at least one sheet and a predictable structure)
+                WriteSheet(wb.Worksheets.Add("Simple Customers"), "Simple Customers Sales Report", simpleData);
 
-                var totalLabelRange = ws.Range(row, 1, row, 9);
-                totalLabelRange.Merge();
-                totalLabelRange.Value = "GRAND TOTAL";
-                totalLabelRange.Style
-                    .Font.SetBold(true).Font.SetFontSize(11).Font.SetFontColor(totalFg)
-                    .Fill.SetBackgroundColor(totalBg)
-                    .Alignment.SetHorizontal(XLAlignmentHorizontalValues.Right)
-                    .Border.SetOutsideBorder(XLBorderStyleValues.Medium)
-                    .Border.SetOutsideBorderColor(XLColor.FromHtml("#2B579A"));
-
-                var qtyCell = ws.Cell(row, 11);
-                qtyCell.FormulaA1 = $"=SUM(K{dataStartRow}:K{dataEndRow})";
-                qtyCell.Style
-                    .Font.SetBold(true).Font.SetFontSize(11).Font.SetFontColor(totalFg)
-                    .Fill.SetBackgroundColor(totalBg)
-                    .Alignment.SetHorizontal(XLAlignmentHorizontalValues.Right)
-                    .Border.SetOutsideBorder(XLBorderStyleValues.Medium)
-                    .Border.SetOutsideBorderColor(XLColor.FromHtml("#2B579A"));
-
-                var totalCell = ws.Cell(row, 12);
-                totalCell.FormulaA1 = $"=SUM(L{dataStartRow}:L{dataEndRow})";
-                totalCell.Style
-                    .Font.SetBold(true).Font.SetFontSize(11).Font.SetFontColor(totalFg)
-                    .Fill.SetBackgroundColor(totalBg)
-                    .Alignment.SetHorizontal(XLAlignmentHorizontalValues.Right)
-                    .NumberFormat.Format = "#,##0";
-                totalCell.Style
-                    .Border.SetOutsideBorder(XLBorderStyleValues.Medium)
-                    .Border.SetOutsideBorderColor(XLColor.FromHtml("#2B579A"));
-
-                ws.Row(row).Height = 22;
-
-                ws.Column(1).Width = 10;
-                ws.Column(2).Width = 15;
-                ws.Column(3).Width = 22;
-                ws.Column(4).Width = 18;
-                ws.Column(5).Width = 14;
-                ws.Column(6).Width = 16;
-                ws.Column(7).Width = 12;
-                ws.Column(8).Width = 16;
-                ws.Column(9).Width = 16;
-                ws.Column(10).Width = 13;
-                ws.Column(11).Width = 6;
-                ws.Column(12).Width = 14;
-
-                ws.SheetView.FreezeRows(headerRow);
+                // ✅ Sheet 2: Instalment Customers (only added when there's data)
+                if (instalmentData.Any())
+                    WriteSheet(wb.Worksheets.Add("Instalment Customers"), "Instalment Customers Sales Report", instalmentData);
 
                 wb.SaveAs(dialog.FileName);
                 MessageBox.Show("Excel file downloaded successfully.", "Success",

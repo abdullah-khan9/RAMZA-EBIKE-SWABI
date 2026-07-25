@@ -4,33 +4,33 @@
       Background="#F5F6FA"
       Title="Customer Dues">
 
-	<Page.Resources>
-		<BooleanToVisibilityConverter x:Key="BoolToVis"/>
-	</Page.Resources>
+    <Page.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+    </Page.Resources>
 
-	<Grid Margin="20">
-		<Grid.RowDefinitions>
-			<RowDefinition Height="Auto"/>
-			<!-- 0: Header + Back         -->
-			<RowDefinition Height="Auto"/>
-			<!-- 1: Due-Today Banner       -->
-			<RowDefinition Height="Auto"/>
-			<!-- 2: Search + Download      -->
-			<RowDefinition Height="Auto"/>
-			<!-- 3: Date Range Filter  NEW -->
-			<RowDefinition Height="*"/>
-			<!-- 4: DataGrid               -->
-		</Grid.RowDefinitions>
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <!-- 0: Header + Back         -->
+            <RowDefinition Height="Auto"/>
+            <!-- 1: Due-Today Banner       -->
+            <RowDefinition Height="Auto"/>
+            <!-- 2: Search + Download      -->
+            <RowDefinition Height="Auto"/>
+            <!-- 3: Date Range Filter  NEW -->
+            <RowDefinition Height="*"/>
+            <!-- 4: DataGrid               -->
+        </Grid.RowDefinitions>
 
-		<!-- ── Row 0: Header + Back ─────────────────────────────────────────── -->
-		<Grid Grid.Row="0" Margin="0 0 0 15" VerticalAlignment="Center">
-			<Grid.ColumnDefinitions>
-				<ColumnDefinition Width="Auto"/>
-				<ColumnDefinition Width="*"/>
-				<ColumnDefinition Width="Auto"/>
-			</Grid.ColumnDefinitions>
+        <!-- ── Row 0: Header + Back ─────────────────────────────────────────── -->
+        <Grid Grid.Row="0" Margin="0 0 0 15" VerticalAlignment="Center">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
 
-			<Button Grid.Column="0"
+            <Button Grid.Column="0"
                     Content="← Back"
                     Width="100" Height="35"
                     FontWeight="Bold"
@@ -38,15 +38,15 @@
                     BorderThickness="0" Cursor="Hand"
                     Click="Back_Click"/>
 
-			<TextBlock Grid.Column="1"
+            <TextBlock Grid.Column="1"
                        Text="Customer Dues"
                        FontSize="26" FontWeight="Bold"
                        HorizontalAlignment="Center"
                        VerticalAlignment="Center"/>
-		</Grid>
+        </Grid>
 
-		<!-- ── Row 1: Due-Today Notification Banner ─────────────────────────── -->
-		<Border x:Name="pnlDueNotification"
+        <!-- ── Row 1: Due-Today Notification Banner ─────────────────────────── -->
+        <Border x:Name="pnlDueNotification"
                 Grid.Row="1"
                 Background="#FFF3CD"
                 BorderBrush="#FFEAA7"
@@ -55,28 +55,28 @@
                 Padding="14 10"
                 Margin="0 0 0 12"
                 Visibility="Collapsed">
-			<Grid>
-				<Grid.ColumnDefinitions>
-					<ColumnDefinition Width="Auto"/>
-					<ColumnDefinition Width="*"/>
-					<ColumnDefinition Width="Auto"/>
-					<ColumnDefinition Width="Auto"/>
-				</Grid.ColumnDefinitions>
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
 
-				<TextBlock Grid.Column="0"
+                <TextBlock Grid.Column="0"
                            Text="🔔"
                            FontSize="22"
                            VerticalAlignment="Center"
                            Margin="0 0 12 0"/>
 
-				<StackPanel Grid.Column="1" VerticalAlignment="Center">
-					<TextBlock x:Name="lblDueNotificationTitle"
+                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                    <TextBlock x:Name="lblDueNotificationTitle"
                                FontWeight="Bold" FontSize="14"
                                Foreground="#856404"/>
-					<ItemsControl x:Name="lstDueToday" Margin="0 4 0 0">
-						<ItemsControl.ItemTemplate>
-							<DataTemplate>
-								<TextBlock FontSize="13" Foreground="#664D03" Margin="0 1">
+                    <ItemsControl x:Name="lstDueToday" Margin="0 4 0 0">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock FontSize="13" Foreground="#664D03" Margin="0 1">
 									<Run Text="• INV-"/>
 									<Run Text="{Binding CustomerInvoiceId, StringFormat=D4}"/>
 									<Run Text=" — "/>
@@ -85,14 +85,14 @@
 									<Run Text="{Binding RemainingBalance, StringFormat=N0}"/>
 									<Run Text="  |  Contact: "/>
 									<Run Text="{Binding Customer.Contact}"/>
-								</TextBlock>
-							</DataTemplate>
-						</ItemsControl.ItemTemplate>
-					</ItemsControl>
-				</StackPanel>
+                                </TextBlock>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
 
-				<!-- Send All WhatsApp button -->
-				<Button Grid.Column="2"
+                <!-- Send All WhatsApp button -->
+                <Button Grid.Column="2"
                         Content="📲 WhatsApp All"
                         Padding="10 6"
                         Margin="8 0"
@@ -101,31 +101,31 @@
                         FontSize="13" FontWeight="Bold"
                         VerticalAlignment="Center"
                         Click="NotifyAll_Click">
-					<Button.Style>
-						<Style TargetType="Button">
-							<Setter Property="Template">
-								<Setter.Value>
-									<ControlTemplate TargetType="Button">
-										<Border Background="{TemplateBinding Background}"
+                    <Button.Style>
+                        <Style TargetType="Button">
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="Button">
+                                        <Border Background="{TemplateBinding Background}"
                                                 CornerRadius="6"
                                                 Padding="{TemplateBinding Padding}">
-											<ContentPresenter HorizontalAlignment="Center"
+                                            <ContentPresenter HorizontalAlignment="Center"
                                                               VerticalAlignment="Center"/>
-										</Border>
-									</ControlTemplate>
-								</Setter.Value>
-							</Setter>
-							<Style.Triggers>
-								<Trigger Property="IsMouseOver" Value="True">
-									<Setter Property="Background" Value="#1DA851"/>
-								</Trigger>
-							</Style.Triggers>
-						</Style>
-					</Button.Style>
-				</Button>
+                                        </Border>
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                            <Style.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter Property="Background" Value="#1DA851"/>
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Button.Style>
+                </Button>
 
-				<!-- Dismiss -->
-				<Button Grid.Column="3"
+                <!-- Dismiss -->
+                <Button Grid.Column="3"
                         Content="✕"
                         Width="28" Height="28"
                         Background="Transparent"
@@ -135,18 +135,18 @@
                         VerticalAlignment="Top"
                         Cursor="Hand"
                         Click="DismissNotification_Click"/>
-			</Grid>
-		</Border>
+            </Grid>
+        </Border>
 
-		<!-- ── Row 2: Search Bar + Download ─────────────────────────────────── -->
-		<Grid Grid.Row="2" Margin="0 0 0 8">
-			<Grid.ColumnDefinitions>
-				<ColumnDefinition Width="*"/>
-				<ColumnDefinition Width="Auto"/>
-				<ColumnDefinition Width="Auto"/>
-			</Grid.ColumnDefinitions>
+        <!-- ── Row 2: Search Bar + Download ─────────────────────────────────── -->
+        <Grid Grid.Row="2" Margin="0 0 0 8">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
 
-			<TextBox x:Name="SearchBox"
+            <TextBox x:Name="SearchBox"
                      Grid.Column="0"
                      Height="35"
                      Padding="10 0"
@@ -155,17 +155,17 @@
                      BorderBrush="#CCCCCC"
                      BorderThickness="1"
                      TextChanged="SearchBox_TextChanged">
-				<TextBox.Style>
-					<Style TargetType="TextBox">
-						<Setter Property="Template">
-							<Setter.Value>
-								<ControlTemplate TargetType="TextBox">
-									<Border Background="White"
+                <TextBox.Style>
+                    <Style TargetType="TextBox">
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="TextBox">
+                                    <Border Background="White"
                                             BorderBrush="{TemplateBinding BorderBrush}"
                                             BorderThickness="{TemplateBinding BorderThickness}"
                                             CornerRadius="6">
-										<Grid>
-											<TextBlock x:Name="Placeholder"
+                                        <Grid>
+                                            <TextBlock x:Name="Placeholder"
                                                        Text="Search by customer name or CNIC..."
                                                        Foreground="#AAAAAA"
                                                        Padding="10 0"
@@ -173,171 +173,305 @@
                                                        FontSize="13"
                                                        IsHitTestVisible="False"
                                                        Visibility="Collapsed"/>
-											<ScrollViewer x:Name="PART_ContentHost"
+                                            <ScrollViewer x:Name="PART_ContentHost"
                                                           Margin="0"
                                                           VerticalAlignment="Center"/>
-										</Grid>
-									</Border>
-									<ControlTemplate.Triggers>
-										<Trigger Property="Text" Value="">
-											<Setter TargetName="Placeholder"
+                                        </Grid>
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="Text" Value="">
+                                            <Setter TargetName="Placeholder"
                                                     Property="Visibility" Value="Visible"/>
-										</Trigger>
-									</ControlTemplate.Triggers>
-								</ControlTemplate>
-							</Setter.Value>
-						</Setter>
-					</Style>
-				</TextBox.Style>
-			</TextBox>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+                </TextBox.Style>
+            </TextBox>
 
-			<Button Grid.Column="1"
+            <Button Grid.Column="1"
                     Content="🔍 Search"
                     Width="110" Height="35"
                     Margin="8 0 0 0"
                     Background="#2B579A" Foreground="White"
                     BorderThickness="0" FontSize="13"
                     Cursor="Hand" Click="Search_Click">
-				<Button.Style>
-					<Style TargetType="Button">
-						<Setter Property="Template">
-							<Setter.Value>
-								<ControlTemplate TargetType="Button">
-									<Border Background="{TemplateBinding Background}"
+                <Button.Style>
+                    <Style TargetType="Button">
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="Button">
+                                    <Border Background="{TemplateBinding Background}"
                                             CornerRadius="6"
                                             Padding="{TemplateBinding Padding}">
-										<ContentPresenter HorizontalAlignment="Center"
+                                        <ContentPresenter HorizontalAlignment="Center"
                                                           VerticalAlignment="Center"/>
-									</Border>
-								</ControlTemplate>
-							</Setter.Value>
-						</Setter>
-						<Style.Triggers>
-							<Trigger Property="IsMouseOver" Value="True">
-								<Setter Property="Background" Value="#1E4080"/>
-							</Trigger>
-						</Style.Triggers>
-					</Style>
-				</Button.Style>
-			</Button>
+                                    </Border>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                        <Style.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#1E4080"/>
+                            </Trigger>
+                        </Style.Triggers>
+                    </Style>
+                </Button.Style>
+            </Button>
 
-			<Button Grid.Column="2"
+            <Button Grid.Column="2"
                     Content="⬇ Download List"
                     Width="140" Height="35"
                     Margin="8 0 0 0"
                     Background="#27AE60" Foreground="White"
                     BorderThickness="0" FontSize="13"
                     Cursor="Hand" Click="Download_Click">
-				<Button.Style>
-					<Style TargetType="Button">
-						<Setter Property="Template">
-							<Setter.Value>
-								<ControlTemplate TargetType="Button">
-									<Border Background="{TemplateBinding Background}"
+                <Button.Style>
+                    <Style TargetType="Button">
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="Button">
+                                    <Border Background="{TemplateBinding Background}"
                                             CornerRadius="6"
                                             Padding="{TemplateBinding Padding}">
-										<ContentPresenter HorizontalAlignment="Center"
+                                        <ContentPresenter HorizontalAlignment="Center"
                                                           VerticalAlignment="Center"/>
-									</Border>
-								</ControlTemplate>
-							</Setter.Value>
-						</Setter>
-						<Style.Triggers>
-							<Trigger Property="IsMouseOver" Value="True">
-								<Setter Property="Background" Value="#219150"/>
-							</Trigger>
-						</Style.Triggers>
-					</Style>
-				</Button.Style>
-			</Button>
-		</Grid>
+                                    </Border>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                        <Style.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#219150"/>
+                            </Trigger>
+                        </Style.Triggers>
+                    </Style>
+                </Button.Style>
+            </Button>
+        </Grid>
 
-		<!-- ── Row 3: Date Range Filter (NEW) ───────────────────────────────── -->
-		<Border Grid.Row="3"
+        <!-- ── Row 3: Date Range Filter (NEW) ───────────────────────────────── -->
+        <Border Grid.Row="3"
                 Background="White"
                 BorderBrush="#DDDDDD"
                 BorderThickness="1"
                 CornerRadius="8"
                 Padding="12 8"
                 Margin="0 0 0 12">
-			<StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
 
-				<!-- Label -->
-				<TextBlock Text="📅  Filter by Invoice Date:"
+                <!-- Label -->
+                <TextBlock Text="📅  Filter by Invoice Date:"
                            FontSize="13" FontWeight="SemiBold"
                            Foreground="#444444"
                            VerticalAlignment="Center"
                            Margin="0 0 12 0"/>
 
-				<!-- From label -->
-				<TextBlock Text="From"
+                <!-- From label -->
+                <TextBlock Text="From"
                            FontSize="13" Foreground="#666666"
                            VerticalAlignment="Center"
                            Margin="0 0 6 0"/>
 
-				<!-- From DatePicker -->
-				<DatePicker x:Name="dpFrom"
+                <!-- From DatePicker -->
+                <DatePicker x:Name="dpFrom"
                             Width="130" Height="32"
                             FontSize="13"
                             SelectedDateChanged="DateFilter_Changed"
                             VerticalContentAlignment="Center"/>
 
-				<!-- To label -->
-				<TextBlock Text="To"
+                <!-- To label -->
+                <TextBlock Text="To"
                            FontSize="13" Foreground="#666666"
                            VerticalAlignment="Center"
                            Margin="14 0 6 0"/>
 
-				<!-- To DatePicker -->
-				<DatePicker x:Name="dpTo"
+                <!-- To DatePicker -->
+                <DatePicker x:Name="dpTo"
                             Width="130" Height="32"
                             FontSize="13"
                             SelectedDateChanged="DateFilter_Changed"
                             VerticalContentAlignment="Center"/>
 
-				<!-- Clear button -->
-				<Button Content="✕ Clear"
+                <!-- Clear button -->
+                <Button Content="✕ Clear"
                         Width="70" Height="30"
                         Margin="14 0 0 0"
                         Background="#E74C3C" Foreground="White"
                         BorderThickness="0" FontSize="12"
                         Cursor="Hand"
                         Click="ClearDates_Click">
-					<Button.Style>
-						<Style TargetType="Button">
-							<Setter Property="Template">
-								<Setter.Value>
-									<ControlTemplate TargetType="Button">
-										<Border Background="{TemplateBinding Background}"
+                    <Button.Style>
+                        <Style TargetType="Button">
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="Button">
+                                        <Border Background="{TemplateBinding Background}"
                                                 CornerRadius="5"
                                                 Padding="{TemplateBinding Padding}">
-											<ContentPresenter HorizontalAlignment="Center"
+                                            <ContentPresenter HorizontalAlignment="Center"
                                                               VerticalAlignment="Center"/>
-										</Border>
-									</ControlTemplate>
-								</Setter.Value>
-							</Setter>
-							<Style.Triggers>
-								<Trigger Property="IsMouseOver" Value="True">
-									<Setter Property="Background" Value="#C0392B"/>
-								</Trigger>
-							</Style.Triggers>
-						</Style>
-					</Button.Style>
-				</Button>
+                                        </Border>
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                            <Style.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter Property="Background" Value="#C0392B"/>
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Button.Style>
+                </Button>
 
-				<!-- Live result count -->
-				<TextBlock x:Name="lblFilterCount"
+                <!-- Live result count -->
+                <TextBlock x:Name="lblFilterCount"
                            FontSize="12" Foreground="#888888"
                            VerticalAlignment="Center"
                            Margin="18 0 0 0"/>
 
-			</StackPanel>
-		</Border>
+            </StackPanel>
+        </Border>
 
-		<!-- ── Row 4: DataGrid ──────────────────────────────────────────────── -->
-		<DataGrid x:Name="dgDues"
-                  Grid.Row="4"
+        <!-- ── Row 4: Tab content (All Dues / Instalment Plans) ────────────────── -->
+        <Grid Grid.Row="4">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <!-- 0: Tab toggle bar -->
+                <RowDefinition Height="Auto"/>
+                <!-- 1: Instalment due/overdue notification -->
+                <RowDefinition Height="*"/>
+                <!-- 2: Active grid -->
+            </Grid.RowDefinitions>
+
+            <!-- ── Tab toggle bar ──────────────────────────────────────────── -->
+            <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0 0 0 12">
+                <Button x:Name="btnTabAllDues"
+                        Content="Simple Dues"
+                        Width="130" Height="36"
+                        FontWeight="Bold" FontSize="13"
+                        Background="#2B579A" Foreground="White"
+                        BorderThickness="0" Cursor="Hand"
+                        Margin="0 0 6 0"
+                        Click="TabAllDues_Click">
+                    <Button.Style>
+                        <Style TargetType="Button">
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="Button">
+                                        <Border Background="{TemplateBinding Background}"
+                                                CornerRadius="6"
+                                                Padding="{TemplateBinding Padding}">
+                                            <ContentPresenter HorizontalAlignment="Center"
+                                                              VerticalAlignment="Center"/>
+                                        </Border>
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                        </Style>
+                    </Button.Style>
+                </Button>
+
+                <Button x:Name="btnTabInstalments"
+                        Content="📅 Instalment Plans"
+                        Width="160" Height="36"
+                        FontWeight="Bold" FontSize="13"
+                        Background="#E0E6ED" Foreground="#444444"
+                        BorderThickness="0" Cursor="Hand"
+                        Click="TabInstalments_Click">
+                    <Button.Style>
+                        <Style TargetType="Button">
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="Button">
+                                        <Border Background="{TemplateBinding Background}"
+                                                CornerRadius="6"
+                                                Padding="{TemplateBinding Padding}">
+                                            <ContentPresenter HorizontalAlignment="Center"
+                                                              VerticalAlignment="Center"/>
+                                        </Border>
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                        </Style>
+                    </Button.Style>
+                </Button>
+
+                <Border x:Name="badgeInstalmentCount"
+                        Background="#E74C3C"
+                        CornerRadius="10"
+                        Padding="8 2"
+                        Margin="8 0 0 0"
+                        VerticalAlignment="Center"
+                        Visibility="Collapsed">
+                    <TextBlock x:Name="txtInstalmentCount"
+                               Foreground="White" FontWeight="Bold" FontSize="12"/>
+                </Border>
+            </StackPanel>
+
+            <!-- ── Instalment due/overdue notification banner ─────────────────── -->
+            <Border x:Name="pnlInstalmentNotification"
+                    Grid.Row="1"
+                    Background="#FFF3CD"
+                    BorderBrush="#FFEAA7"
+                    BorderThickness="1"
+                    CornerRadius="8"
+                    Padding="14 10"
+                    Margin="0 0 0 12"
+                    Visibility="Collapsed">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <TextBlock Grid.Column="0"
+                               Text="📅"
+                               FontSize="22"
+                               VerticalAlignment="Center"
+                               Margin="0 0 12 0"/>
+
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                        <TextBlock x:Name="lblInstalmentNotificationTitle"
+                                   FontWeight="Bold" FontSize="14"
+                                   Foreground="#856404"/>
+                        <ItemsControl x:Name="lstInstalmentDue" Margin="0 4 0 0">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock FontSize="13" Foreground="#664D03" Margin="0 1">
+										<Run Text="• "/>
+										<Run Text="{Binding CustomerName, Mode=OneWay}"/>
+										<Run Text="  —  Instalment #"/>
+										<Run Text="{Binding InstalmentNumber, Mode=OneWay}"/>
+										<Run Text="  |  Amount Due: ₨ "/>
+										<Run Text="{Binding AmountDueDisplay, Mode=OneWay}"/>
+										<Run Text="  |  "/>
+										<Run Text="{Binding DueDateDisplay, Mode=OneWay}"/>
+                                    </TextBlock>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+
+                    <Button Grid.Column="2"
+                            Content="✕"
+                            Width="28" Height="28"
+                            Background="Transparent"
+                            BorderThickness="0"
+                            FontSize="14"
+                            Foreground="#856404"
+                            VerticalAlignment="Top"
+                            Cursor="Hand"
+                            Click="DismissInstalmentNotification_Click"/>
+                </Grid>
+            </Border>
+
+            <!-- ── Row 4→2: DataGrid (All Dues) ─────────────────────────────── -->
+            <DataGrid x:Name="dgDues"
+                  Grid.Row="2"
                   AutoGenerateColumns="False"
                   IsReadOnly="True"
                   CanUserAddRows="False"
@@ -353,208 +487,208 @@
                   FontFamily="Segoe UI"
                   FontSize="14">
 
-			<DataGrid.Resources>
-				<Style TargetType="DataGridColumnHeader">
-					<Setter Property="Background" Value="#E0E6ED"/>
-					<Setter Property="FontWeight" Value="SemiBold"/>
-					<Setter Property="Padding" Value="10,8"/>
-					<Setter Property="BorderBrush" Value="#CCCCCC"/>
-					<Setter Property="BorderThickness" Value="0,0,1,1"/>
-				</Style>
-				<Style TargetType="DataGridCell">
-					<Setter Property="Padding" Value="10,5"/>
-					<Setter Property="Template">
-						<Setter.Value>
-							<ControlTemplate TargetType="DataGridCell">
-								<ContentPresenter VerticalAlignment="Center"/>
-							</ControlTemplate>
-						</Setter.Value>
-					</Setter>
-				</Style>
+                <DataGrid.Resources>
+                    <Style TargetType="DataGridColumnHeader">
+                        <Setter Property="Background" Value="#E0E6ED"/>
+                        <Setter Property="FontWeight" Value="SemiBold"/>
+                        <Setter Property="Padding" Value="10,8"/>
+                        <Setter Property="BorderBrush" Value="#CCCCCC"/>
+                        <Setter Property="BorderThickness" Value="0,0,1,1"/>
+                    </Style>
+                    <Style TargetType="DataGridCell">
+                        <Setter Property="Padding" Value="10,5"/>
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="DataGridCell">
+                                    <ContentPresenter VerticalAlignment="Center"/>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
 
-				<!-- Row highlight: yellow = due today, red bg = overdue -->
-				<Style TargetType="DataGridRow">
-					<Style.Triggers>
-						<DataTrigger Binding="{Binding IsDueToday}" Value="True">
-							<Setter Property="Background" Value="#FFF8E1"/>
-							<Setter Property="FontWeight" Value="SemiBold"/>
-						</DataTrigger>
-						<DataTrigger Binding="{Binding IsOverdue}" Value="True">
-							<Setter Property="Background" Value="#FFEBEE"/>
-						</DataTrigger>
-					</Style.Triggers>
-				</Style>
-			</DataGrid.Resources>
+                    <!-- Row highlight: yellow = due today, red bg = overdue -->
+                    <Style TargetType="DataGridRow">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsDueToday}" Value="True">
+                                <Setter Property="Background" Value="#FFF8E1"/>
+                                <Setter Property="FontWeight" Value="SemiBold"/>
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding IsOverdue}" Value="True">
+                                <Setter Property="Background" Value="#FFEBEE"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </DataGrid.Resources>
 
-			<DataGrid.Columns>
+                <DataGrid.Columns>
 
-				<DataGridTextColumn Header="Invoice #"
-                                    Binding="{Binding CustomerInvoiceId}"
+                    <DataGridTextColumn Header="Invoice #"
+                                    Binding="{Binding CustomerInvoiceId, Mode=OneWay}"
                                     Width="0.6*"/>
 
-				<DataGridTextColumn Header="Customer"
-                                    Binding="{Binding Customer.Name}"
+                    <DataGridTextColumn Header="Customer"
+                                    Binding="{Binding Customer.Name, Mode=OneWay}"
                                     Width="1.4*"/>
 
-				<DataGridTextColumn Header="CNIC"
-                                    Binding="{Binding Customer.CNIC}"
+                    <DataGridTextColumn Header="CNIC"
+                                    Binding="{Binding Customer.CNIC, Mode=OneWay}"
                                     Width="1.2*"/>
 
-				<DataGridTextColumn Header="Contact"
-                                    Binding="{Binding Customer.Contact}"
+                    <DataGridTextColumn Header="Contact"
+                                    Binding="{Binding Customer.Contact, Mode=OneWay}"
                                     Width="1*"/>
 
-				<DataGridTextColumn Header="Net Bill"
-                                    Binding="{Binding NetBill, StringFormat='₨ {0:N0}'}"
+                    <DataGridTextColumn Header="Net Bill"
+                                    Binding="{Binding NetBill, StringFormat='₨ {0:N0}', Mode=OneWay}"
                                     Width="0.8*"/>
 
-				<DataGridTextColumn Header="Paid"
-                                    Binding="{Binding AmountPaid, StringFormat='₨ {0:N0}'}"
+                    <DataGridTextColumn Header="Paid"
+                                    Binding="{Binding AmountPaid, StringFormat='₨ {0:N0}', Mode=OneWay}"
                                     Width="0.8*"/>
 
-				<DataGridTextColumn Header="Remaining"
-                                    Binding="{Binding RemainingBalance, StringFormat='₨ {0:N0}'}"
+                    <DataGridTextColumn Header="Remaining"
+                                    Binding="{Binding RemainingBalance, StringFormat='₨ {0:N0}', Mode=OneWay}"
                                     Width="0.8*"/>
 
-				<!-- Due Date column -->
-				<DataGridTemplateColumn Header="Due Date" Width="115">
-					<DataGridTemplateColumn.CellTemplate>
-						<DataTemplate>
-							<TextBlock Text="{Binding DueDateDisplay}"
+                    <!-- Due Date column -->
+                    <DataGridTemplateColumn Header="Due Date" Width="115">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding DueDateDisplay}"
                                        Foreground="{Binding DueDateColor}"
                                        FontWeight="{Binding DueDateFontWeight}"
                                        VerticalAlignment="Center"
                                        Padding="6 0"/>
-						</DataTemplate>
-					</DataGridTemplateColumn.CellTemplate>
-				</DataGridTemplateColumn>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
 
-				<!-- Actions column -->
-				<DataGridTemplateColumn Header="Actions" Width="280">
-					<DataGridTemplateColumn.CellTemplate>
-						<DataTemplate>
-							<StackPanel Orientation="Horizontal"
+                    <!-- Actions column -->
+                    <DataGridTemplateColumn Header="Actions" Width="280">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal"
                                         HorizontalAlignment="Center"
                                         Margin="4,0">
 
-								<!-- Edit -->
-								<Button Content="Edit"
+                                    <!-- Edit -->
+                                    <Button Content="Edit"
                                         Margin="0,0,4,0" Padding="8,4" FontSize="12"
                                         Background="#3498DB" Foreground="White"
                                         BorderThickness="0" Cursor="Hand"
                                         Click="Edit_Click">
-									<Button.Style>
-										<Style TargetType="Button">
-											<Setter Property="Template">
-												<Setter.Value>
-													<ControlTemplate TargetType="Button">
-														<Border Background="{TemplateBinding Background}"
+                                        <Button.Style>
+                                            <Style TargetType="Button">
+                                                <Setter Property="Template">
+                                                    <Setter.Value>
+                                                        <ControlTemplate TargetType="Button">
+                                                            <Border Background="{TemplateBinding Background}"
                                                                 CornerRadius="4"
                                                                 Padding="{TemplateBinding Padding}">
-															<ContentPresenter HorizontalAlignment="Center"
+                                                                <ContentPresenter HorizontalAlignment="Center"
                                                                               VerticalAlignment="Center"/>
-														</Border>
-													</ControlTemplate>
-												</Setter.Value>
-											</Setter>
-											<Style.Triggers>
-												<Trigger Property="IsMouseOver" Value="True">
-													<Setter Property="Background" Value="#2980B9"/>
-												</Trigger>
-											</Style.Triggers>
-										</Style>
-									</Button.Style>
-								</Button>
+                                                            </Border>
+                                                        </ControlTemplate>
+                                                    </Setter.Value>
+                                                </Setter>
+                                                <Style.Triggers>
+                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                        <Setter Property="Background" Value="#2980B9"/>
+                                                    </Trigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Button.Style>
+                                    </Button>
 
-								<!-- Pay -->
-								<Button Content="Pay"
+                                    <!-- Pay -->
+                                    <Button Content="Pay"
                                         Margin="0,0,4,0" Padding="8,4" FontSize="12"
                                         Background="#E67E22" Foreground="White"
                                         BorderThickness="0" Cursor="Hand"
                                         Click="Pay_Click">
-									<Button.Style>
-										<Style TargetType="Button">
-											<Setter Property="Template">
-												<Setter.Value>
-													<ControlTemplate TargetType="Button">
-														<Border Background="{TemplateBinding Background}"
+                                        <Button.Style>
+                                            <Style TargetType="Button">
+                                                <Setter Property="Template">
+                                                    <Setter.Value>
+                                                        <ControlTemplate TargetType="Button">
+                                                            <Border Background="{TemplateBinding Background}"
                                                                 CornerRadius="4"
                                                                 Padding="{TemplateBinding Padding}">
-															<ContentPresenter HorizontalAlignment="Center"
+                                                                <ContentPresenter HorizontalAlignment="Center"
                                                                               VerticalAlignment="Center"/>
-														</Border>
-													</ControlTemplate>
-												</Setter.Value>
-											</Setter>
-											<Style.Triggers>
-												<Trigger Property="IsMouseOver" Value="True">
-													<Setter Property="Background" Value="#CA6F1E"/>
-												</Trigger>
-											</Style.Triggers>
-										</Style>
-									</Button.Style>
-								</Button>
+                                                            </Border>
+                                                        </ControlTemplate>
+                                                    </Setter.Value>
+                                                </Setter>
+                                                <Style.Triggers>
+                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                        <Setter Property="Background" Value="#CA6F1E"/>
+                                                    </Trigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Button.Style>
+                                    </Button>
 
-								<!-- History -->
-								<Button Content="History"
+                                    <!-- History -->
+                                    <Button Content="History"
                                         Margin="0,0,4,0" Padding="8,4" FontSize="12"
                                         Background="#8E44AD" Foreground="White"
                                         BorderThickness="0" Cursor="Hand"
                                         Click="History_Click">
-									<Button.Style>
-										<Style TargetType="Button">
-											<Setter Property="Template">
-												<Setter.Value>
-													<ControlTemplate TargetType="Button">
-														<Border Background="{TemplateBinding Background}"
+                                        <Button.Style>
+                                            <Style TargetType="Button">
+                                                <Setter Property="Template">
+                                                    <Setter.Value>
+                                                        <ControlTemplate TargetType="Button">
+                                                            <Border Background="{TemplateBinding Background}"
                                                                 CornerRadius="4"
                                                                 Padding="{TemplateBinding Padding}">
-															<ContentPresenter HorizontalAlignment="Center"
+                                                                <ContentPresenter HorizontalAlignment="Center"
                                                                               VerticalAlignment="Center"/>
-														</Border>
-													</ControlTemplate>
-												</Setter.Value>
-											</Setter>
-											<Style.Triggers>
-												<Trigger Property="IsMouseOver" Value="True">
-													<Setter Property="Background" Value="#7D3C98"/>
-												</Trigger>
-											</Style.Triggers>
-										</Style>
-									</Button.Style>
-								</Button>
+                                                            </Border>
+                                                        </ControlTemplate>
+                                                    </Setter.Value>
+                                                </Setter>
+                                                <Style.Triggers>
+                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                        <Setter Property="Background" Value="#7D3C98"/>
+                                                    </Trigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Button.Style>
+                                    </Button>
 
-								<!-- PDF -->
-								<Button Content="PDF"
+                                    <!-- PDF -->
+                                    <Button Content="PDF"
                                         Margin="0,0,4,0" Padding="8,4" FontSize="12"
                                         Background="#2ECC71" Foreground="White"
                                         BorderThickness="0" Cursor="Hand"
                                         Click="Pdf_Click">
-									<Button.Style>
-										<Style TargetType="Button">
-											<Setter Property="Template">
-												<Setter.Value>
-													<ControlTemplate TargetType="Button">
-														<Border Background="{TemplateBinding Background}"
+                                        <Button.Style>
+                                            <Style TargetType="Button">
+                                                <Setter Property="Template">
+                                                    <Setter.Value>
+                                                        <ControlTemplate TargetType="Button">
+                                                            <Border Background="{TemplateBinding Background}"
                                                                 CornerRadius="4"
                                                                 Padding="{TemplateBinding Padding}">
-															<ContentPresenter HorizontalAlignment="Center"
+                                                                <ContentPresenter HorizontalAlignment="Center"
                                                                               VerticalAlignment="Center"/>
-														</Border>
-													</ControlTemplate>
-												</Setter.Value>
-											</Setter>
-											<Style.Triggers>
-												<Trigger Property="IsMouseOver" Value="True">
-													<Setter Property="Background" Value="#27AE60"/>
-												</Trigger>
-											</Style.Triggers>
-										</Style>
-									</Button.Style>
-								</Button>
+                                                            </Border>
+                                                        </ControlTemplate>
+                                                    </Setter.Value>
+                                                </Setter>
+                                                <Style.Triggers>
+                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                        <Setter Property="Background" Value="#27AE60"/>
+                                                    </Trigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Button.Style>
+                                    </Button>
 
-								<!-- WhatsApp Notify button -->
-								<Button Content="📲"
+                                    <!-- WhatsApp Notify button -->
+                                    <Button Content="📲"
                                         Padding="8,4" FontSize="12"
                                         Background="#25D366" Foreground="White"
                                         BorderThickness="0" Cursor="Hand"
@@ -562,35 +696,175 @@
                                                      Converter={StaticResource BoolToVis}}"
                                         ToolTip="Send WhatsApp payment reminder"
                                         Click="Notify_Click">
-									<Button.Style>
-										<Style TargetType="Button">
-											<Setter Property="Template">
-												<Setter.Value>
-													<ControlTemplate TargetType="Button">
-														<Border Background="{TemplateBinding Background}"
+                                        <Button.Style>
+                                            <Style TargetType="Button">
+                                                <Setter Property="Template">
+                                                    <Setter.Value>
+                                                        <ControlTemplate TargetType="Button">
+                                                            <Border Background="{TemplateBinding Background}"
                                                                 CornerRadius="4"
                                                                 Padding="{TemplateBinding Padding}">
-															<ContentPresenter HorizontalAlignment="Center"
+                                                                <ContentPresenter HorizontalAlignment="Center"
                                                                               VerticalAlignment="Center"/>
-														</Border>
-													</ControlTemplate>
-												</Setter.Value>
-											</Setter>
-											<Style.Triggers>
-												<Trigger Property="IsMouseOver" Value="True">
-													<Setter Property="Background" Value="#1DA851"/>
-												</Trigger>
-											</Style.Triggers>
-										</Style>
-									</Button.Style>
-								</Button>
+                                                            </Border>
+                                                        </ControlTemplate>
+                                                    </Setter.Value>
+                                                </Setter>
+                                                <Style.Triggers>
+                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                        <Setter Property="Background" Value="#1DA851"/>
+                                                    </Trigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Button.Style>
+                                    </Button>
 
-							</StackPanel>
-						</DataTemplate>
-					</DataGridTemplateColumn.CellTemplate>
-				</DataGridTemplateColumn>
+                                </StackPanel>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
 
-			</DataGrid.Columns>
-		</DataGrid>
-	</Grid>
+                </DataGrid.Columns>
+            </DataGrid>
+
+            <!-- ── Row 4→2: DataGrid (Instalment Plan Customers) ────────────────── -->
+            <DataGrid x:Name="dgInstalmentCustomers"
+                  Grid.Row="2"
+                  Visibility="Collapsed"
+                  AutoGenerateColumns="False"
+                  IsReadOnly="True"
+                  CanUserAddRows="False"
+                  CanUserDeleteRows="False"
+                  RowHeight="42"
+                  HeadersVisibility="Column"
+                  BorderBrush="#DDDDDD"
+                  BorderThickness="1"
+                  AlternatingRowBackground="#F9FAFB"
+                  Background="White"
+                  RowBackground="White"
+                  GridLinesVisibility="None"
+                  FontFamily="Segoe UI"
+                  FontSize="14">
+
+                <DataGrid.Resources>
+                    <Style TargetType="DataGridColumnHeader">
+                        <Setter Property="Background" Value="#E0E6ED"/>
+                        <Setter Property="FontWeight" Value="SemiBold"/>
+                        <Setter Property="Padding" Value="10,8"/>
+                    </Style>
+                </DataGrid.Resources>
+
+                <DataGrid.RowStyle>
+                    <Style TargetType="DataGridRow">
+                        <Setter Property="Background" Value="{Binding RowBg}"/>
+                    </Style>
+                </DataGrid.RowStyle>
+
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="Customer" Binding="{Binding CustomerName, Mode=OneWay}" Width="160"/>
+                    <DataGridTextColumn Header="Invoice #" Binding="{Binding InvoiceRef, Mode=OneWay}" Width="90"/>
+                    <DataGridTextColumn Header="Contact" Binding="{Binding Contact, Mode=OneWay}" Width="120"/>
+                    <DataGridTextColumn Header="Next Instalment" Binding="{Binding InstalmentLabel, Mode=OneWay}" Width="120"/>
+                    <DataGridTextColumn Header="Amount Due" Binding="{Binding AmountDueDisplay, Mode=OneWay}" Width="110"/>
+                    <DataGridTextColumn Header="Due Date" Binding="{Binding DueDateDisplay, Mode=OneWay}" Width="120"/>
+                    <DataGridTextColumn Header="Status" Binding="{Binding StatusDisplay, Mode=OneWay}" Width="110"/>
+                    <DataGridTextColumn Header="Total Plan Remaining" Binding="{Binding PlanRemainingDisplay, Mode=OneWay}" Width="140"/>
+
+                    <DataGridTemplateColumn Header="Actions" Width="280">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal">
+                                    <Button Content="View Plan"
+                                            Margin="0,0,4,0" Padding="8,4" FontSize="12"
+                                            Background="#D97706" Foreground="White"
+                                            BorderThickness="0" Cursor="Hand"
+                                            Click="ViewInstalmentPlan_Click">
+                                        <Button.Style>
+                                            <Style TargetType="Button">
+                                                <Setter Property="Template">
+                                                    <Setter.Value>
+                                                        <ControlTemplate TargetType="Button">
+                                                            <Border Background="{TemplateBinding Background}"
+                                                                CornerRadius="4"
+                                                                Padding="{TemplateBinding Padding}">
+                                                                <ContentPresenter HorizontalAlignment="Center"
+                                                                              VerticalAlignment="Center"/>
+                                                            </Border>
+                                                        </ControlTemplate>
+                                                    </Setter.Value>
+                                                </Setter>
+                                                <Style.Triggers>
+                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                        <Setter Property="Background" Value="#B45309"/>
+                                                    </Trigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Button.Style>
+                                    </Button>
+
+                                    <Button Content="History"
+                                            Margin="0,0,4,0" Padding="8,4" FontSize="12"
+                                            Background="#8E44AD" Foreground="White"
+                                            BorderThickness="0" Cursor="Hand"
+                                            Click="InstalmentHistory_Click">
+                                        <Button.Style>
+                                            <Style TargetType="Button">
+                                                <Setter Property="Template">
+                                                    <Setter.Value>
+                                                        <ControlTemplate TargetType="Button">
+                                                            <Border Background="{TemplateBinding Background}"
+                                                                CornerRadius="4"
+                                                                Padding="{TemplateBinding Padding}">
+                                                                <ContentPresenter HorizontalAlignment="Center"
+                                                                              VerticalAlignment="Center"/>
+                                                            </Border>
+                                                        </ControlTemplate>
+                                                    </Setter.Value>
+                                                </Setter>
+                                                <Style.Triggers>
+                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                        <Setter Property="Background" Value="#7D3C98"/>
+                                                    </Trigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Button.Style>
+                                    </Button>
+
+                                    <Button Content="📲"
+                                            Padding="8,4" FontSize="12"
+                                            Background="#25D366" Foreground="White"
+                                            BorderThickness="0" Cursor="Hand"
+                                            ToolTip="Send WhatsApp payment reminder"
+                                            Click="NotifyInstalment_Click">
+                                        <Button.Style>
+                                            <Style TargetType="Button">
+                                                <Setter Property="Template">
+                                                    <Setter.Value>
+                                                        <ControlTemplate TargetType="Button">
+                                                            <Border Background="{TemplateBinding Background}"
+                                                                CornerRadius="4"
+                                                                Padding="{TemplateBinding Padding}">
+                                                                <ContentPresenter HorizontalAlignment="Center"
+                                                                              VerticalAlignment="Center"/>
+                                                            </Border>
+                                                        </ControlTemplate>
+                                                    </Setter.Value>
+                                                </Setter>
+                                                <Style.Triggers>
+                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                        <Setter Property="Background" Value="#1DA851"/>
+                                                    </Trigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Button.Style>
+                                    </Button>
+                                </StackPanel>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                </DataGrid.Columns>
+            </DataGrid>
+
+        </Grid>
+    </Grid>
 </Page>

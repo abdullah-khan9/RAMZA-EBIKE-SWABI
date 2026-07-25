@@ -114,9 +114,70 @@
                     Click="Download_Click"/>
         </StackPanel>
 
-        <!-- Results DataGrid -->
-        <DataGrid x:Name="dgInvoices"
-                  Grid.Row="3"
+        <!-- Results (tabbed) -->
+        <Grid Grid.Row="3">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <!-- Tab toggle bar -->
+            <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0 0 0 12">
+                <Button x:Name="btnTabSimple"
+                        Content="Simple Customers"
+                        Width="150" Height="36"
+                        FontWeight="Bold" FontSize="13"
+                        Background="#2B579A" Foreground="White"
+                        BorderThickness="0" Cursor="Hand"
+                        Margin="0 0 6 0"
+                        Click="TabSimple_Click">
+                    <Button.Style>
+                        <Style TargetType="Button">
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="Button">
+                                        <Border Background="{TemplateBinding Background}"
+                                                CornerRadius="6"
+                                                Padding="{TemplateBinding Padding}">
+                                            <ContentPresenter HorizontalAlignment="Center"
+                                                              VerticalAlignment="Center"/>
+                                        </Border>
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                        </Style>
+                    </Button.Style>
+                </Button>
+
+                <Button x:Name="btnTabInstalment"
+                        Content="📅 Instalment Customers"
+                        Width="180" Height="36"
+                        FontWeight="Bold" FontSize="13"
+                        Background="#E0E6ED" Foreground="#444444"
+                        BorderThickness="0" Cursor="Hand"
+                        Click="TabInstalment_Click">
+                    <Button.Style>
+                        <Style TargetType="Button">
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="Button">
+                                        <Border Background="{TemplateBinding Background}"
+                                                CornerRadius="6"
+                                                Padding="{TemplateBinding Padding}">
+                                            <ContentPresenter HorizontalAlignment="Center"
+                                                              VerticalAlignment="Center"/>
+                                        </Border>
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                        </Style>
+                    </Button.Style>
+                </Button>
+            </StackPanel>
+
+            <!-- Simple Customers DataGrid -->
+            <DataGrid x:Name="dgInvoices"
+                  Grid.Row="1"
                   AutoGenerateColumns="False"
                   IsReadOnly="True"
                   CanUserAddRows="False"
@@ -132,67 +193,67 @@
                   FontFamily="Segoe UI"
                   FontSize="14">
 
-            <DataGrid.Resources>
-                <Style TargetType="DataGridColumnHeader">
-                    <Setter Property="Background" Value="#E0E6ED"/>
-                    <Setter Property="FontWeight" Value="SemiBold"/>
-                    <Setter Property="Padding" Value="10,8"/>
-                    <Setter Property="BorderBrush" Value="#CCCCCC"/>
-                    <Setter Property="BorderThickness" Value="0,0,1,1"/>
-                </Style>
-                <Style TargetType="DataGridCell">
-                    <Setter Property="Padding" Value="10,5"/>
-                    <Setter Property="Template">
-                        <Setter.Value>
-                            <ControlTemplate TargetType="DataGridCell">
-                                <ContentPresenter VerticalAlignment="Center"/>
-                            </ControlTemplate>
-                        </Setter.Value>
-                    </Setter>
-                </Style>
-            </DataGrid.Resources>
+                <DataGrid.Resources>
+                    <Style TargetType="DataGridColumnHeader">
+                        <Setter Property="Background" Value="#E0E6ED"/>
+                        <Setter Property="FontWeight" Value="SemiBold"/>
+                        <Setter Property="Padding" Value="10,8"/>
+                        <Setter Property="BorderBrush" Value="#CCCCCC"/>
+                        <Setter Property="BorderThickness" Value="0,0,1,1"/>
+                    </Style>
+                    <Style TargetType="DataGridCell">
+                        <Setter Property="Padding" Value="10,5"/>
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="DataGridCell">
+                                    <ContentPresenter VerticalAlignment="Center"/>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+                </DataGrid.Resources>
 
-            <DataGrid.Columns>
-                <DataGridTextColumn Header="Invoice #"
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="Invoice #"
                         Binding="{Binding CustomerInvoiceId}"
                         Width="0.6*"/>
 
-                <DataGridTextColumn Header="Customer"
+                    <DataGridTextColumn Header="Customer"
                         Binding="{Binding Customer.Name}"
                         Width="1.4*"/>
 
-                <DataGridTextColumn Header="CNIC"
+                    <DataGridTextColumn Header="CNIC"
                         Binding="{Binding Customer.CNIC}"
                         Width="1.2*"/>
 
-                <DataGridTextColumn Header="Contact"
+                    <DataGridTextColumn Header="Contact"
                         Binding="{Binding Customer.Contact}"
                         Width="1*"/>
 
-                <DataGridTextColumn Header="Net Bill"
+                    <DataGridTextColumn Header="Net Bill"
                         Binding="{Binding NetBill, StringFormat='₨ {0:N0}'}"
                         Width="0.8*"/>
 
-                <DataGridTextColumn Header="Paid Amount"
+                    <DataGridTextColumn Header="Paid Amount"
                         Binding="{Binding AmountPaid, StringFormat='₨ {0:N0}'}"
                         Width="0.8*"/>
 
-                <DataGridTextColumn Header="Remaining"
+                    <DataGridTextColumn Header="Remaining"
                         Binding="{Binding RemainingBalance, StringFormat='₨ {0:N0}'}"
                         Width="0.8*"/>
 
-                <DataGridTextColumn Header="Status"
+                    <DataGridTextColumn Header="Status"
                         Binding="{Binding Status}"
                         Width="0.7*"/>
 
-                <DataGridTemplateColumn Header="Actions" Width="185">
-                    <DataGridTemplateColumn.CellTemplate>
-                        <DataTemplate>
-                            <StackPanel Orientation="Horizontal"
+                    <DataGridTemplateColumn Header="Actions" Width="185">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal"
                             HorizontalAlignment="Center"
                             Margin="4,0">
 
-                                <Button Content="Edit"
+                                    <Button Content="Edit"
                             Margin="0,0,4,0"
                             Padding="8,4"
                             FontSize="12"
@@ -202,7 +263,7 @@
                             Cursor="Hand"
                             Click="Edit_Click"/>
 
-                                <Button Content="History"
+                                    <Button Content="History"
                             Margin="0,0,4,0"
                             Padding="8,4"
                             FontSize="12"
@@ -212,7 +273,7 @@
                             Cursor="Hand"
                             Click="History_Click"/>
 
-                                <Button Content="PDF"
+                                    <Button Content="PDF"
                             Padding="8,4"
                             FontSize="12"
                             Background="#2ECC71"
@@ -221,11 +282,127 @@
                             Cursor="Hand"
                             Click="Pdf_Click"/>
 
-                            </StackPanel>
-                        </DataTemplate>
-                    </DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>
-            </DataGrid.Columns>
-        </DataGrid>
+                                </StackPanel>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                </DataGrid.Columns>
+            </DataGrid>
+
+            <!-- Instalment Customers DataGrid — identical columns/actions -->
+            <DataGrid x:Name="dgInstalmentInvoices"
+                  Grid.Row="1"
+                  Visibility="Collapsed"
+                  AutoGenerateColumns="False"
+                  IsReadOnly="True"
+                  CanUserAddRows="False"
+                  CanUserDeleteRows="False"
+                  RowHeight="40"
+                  HeadersVisibility="Column"
+                  BorderBrush="#DDDDDD"
+                  BorderThickness="1"
+                  AlternatingRowBackground="#F9FAFB"
+                  Background="White"
+                  RowBackground="White"
+                  GridLinesVisibility="None"
+                  FontFamily="Segoe UI"
+                  FontSize="14">
+
+                <DataGrid.Resources>
+                    <Style TargetType="DataGridColumnHeader">
+                        <Setter Property="Background" Value="#E0E6ED"/>
+                        <Setter Property="FontWeight" Value="SemiBold"/>
+                        <Setter Property="Padding" Value="10,8"/>
+                        <Setter Property="BorderBrush" Value="#CCCCCC"/>
+                        <Setter Property="BorderThickness" Value="0,0,1,1"/>
+                    </Style>
+                    <Style TargetType="DataGridCell">
+                        <Setter Property="Padding" Value="10,5"/>
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="DataGridCell">
+                                    <ContentPresenter VerticalAlignment="Center"/>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+                </DataGrid.Resources>
+
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="Invoice #"
+                            Binding="{Binding CustomerInvoiceId}"
+                            Width="0.6*"/>
+
+                    <DataGridTextColumn Header="Customer"
+                            Binding="{Binding Customer.Name}"
+                            Width="1.4*"/>
+
+                    <DataGridTextColumn Header="CNIC"
+                            Binding="{Binding Customer.CNIC}"
+                            Width="1.2*"/>
+
+                    <DataGridTextColumn Header="Contact"
+                            Binding="{Binding Customer.Contact}"
+                            Width="1*"/>
+
+                    <DataGridTextColumn Header="Net Bill"
+                            Binding="{Binding NetBill, StringFormat='₨ {0:N0}'}"
+                            Width="0.8*"/>
+
+                    <DataGridTextColumn Header="Paid Amount"
+                            Binding="{Binding AmountPaid, StringFormat='₨ {0:N0}'}"
+                            Width="0.8*"/>
+
+                    <DataGridTextColumn Header="Remaining"
+                            Binding="{Binding RemainingBalance, StringFormat='₨ {0:N0}'}"
+                            Width="0.8*"/>
+
+                    <DataGridTextColumn Header="Status"
+                            Binding="{Binding Status}"
+                            Width="0.7*"/>
+
+                    <DataGridTemplateColumn Header="Actions" Width="185">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal"
+                                HorizontalAlignment="Center"
+                                Margin="4,0">
+
+                                    <Button Content="Edit"
+                                Margin="0,0,4,0"
+                                Padding="8,4"
+                                FontSize="12"
+                                Background="#3498DB"
+                                Foreground="White"
+                                BorderThickness="0"
+                                Cursor="Hand"
+                                Click="Edit_Click"/>
+
+                                    <Button Content="History"
+                                Margin="0,0,4,0"
+                                Padding="8,4"
+                                FontSize="12"
+                                Background="#8E44AD"
+                                Foreground="White"
+                                BorderThickness="0"
+                                Cursor="Hand"
+                                Click="History_Click"/>
+
+                                    <Button Content="PDF"
+                                Padding="8,4"
+                                FontSize="12"
+                                Background="#2ECC71"
+                                Foreground="White"
+                                BorderThickness="0"
+                                Cursor="Hand"
+                                Click="Pdf_Click"/>
+
+                                </StackPanel>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                </DataGrid.Columns>
+            </DataGrid>
+        </Grid>
     </Grid>
 </Page>

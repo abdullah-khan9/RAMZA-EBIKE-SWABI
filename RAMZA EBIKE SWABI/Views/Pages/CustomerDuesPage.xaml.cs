@@ -1,14 +1,16 @@
-﻿using System;
+﻿using ClosedXML.Excel;
+using Microsoft.Win32;
+using Ramza_EBike_Swabi.Models;
+using Ramza_EBike_Swabi.Services;
+using Ramza_EBike_Swabi.Services.Pdf;
+using Ramza_EBike_Swabi.Views.Windows;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using Microsoft.Win32;
-using ClosedXML.Excel;
-using Ramza_EBike_Swabi.Models;
-using Ramza_EBike_Swabi.Services;
-using Ramza_EBike_Swabi.Services.Pdf;
+using System.Windows.Media;
 
 namespace Ramza_EBike_Swabi.Views.Pages
 {
@@ -16,7 +18,6 @@ namespace Ramza_EBike_Swabi.Views.Pages
     public class CustomerDueRow
     {
         private readonly CustomerInvoice _invoice;
-
         public CustomerDueRow(CustomerInvoice invoice) => _invoice = invoice;
 
         // Forwarded properties
@@ -66,31 +67,347 @@ namespace Ramza_EBike_Swabi.Views.Pages
             (IsDueToday || IsOverdue) ? "Bold" : "Normal";
     }
 
+    // ── ViewModel wrapper — Instalment Plans tab ────────────────────────────
+    public class InstalmentCustomerRow
+    {
+        public int CustomerInvoiceId { get; set; }
+        public string CustomerName { get; set; } = "-";
+        public string Contact { get; set; } = "-";
+        public string InvoiceRef { get; set; } = "-";
+        public int InstalmentNumber { get; set; }
+        public decimal AmountDue { get; set; }
+        public DateTime InstalmentDueDate { get; set; }
+        public string Status { get; set; } = "Pending";
+        public decimal PlanRemaining { get; set; }
+        public CustomerInvoice? InvoiceObj { get; set; }
+
+        public string InstalmentLabel => $"#{InstalmentNumber}";
+        public string AmountDueDisplay => AmountDue.ToString("N0");
+        public string PlanRemainingDisplay => $"₨ {PlanRemaining:N0}";
+
+        public bool IsDueToday => InstalmentDueDate.Date == DateTime.Today;
+        public bool IsOverdue => InstalmentDueDate.Date < DateTime.Today;
+
+        public string DueDateDisplay
+        {
+            get
+            {
+                if (IsDueToday) return "🔔 Today";
+                if (IsOverdue) return $"⚠ {InstalmentDueDate:dd MMM yy}";
+                return InstalmentDueDate.ToString("dd MMM yyyy");
+            }
+        }
+
+        public string StatusDisplay => Status switch
+        {
+            "Overdue" => "⚠ Overdue",
+            "Partially Paid" => "🟡 Partial",
+            _ => "🕐 Pending"
+        };
+
+        public string RowBg => Status switch
+        {
+            "Overdue" => "#FFF5F5",
+            "Partially Paid" => "#FFFBEA",
+            _ => "White"
+        };
+    }
+
     // ── Page code-behind ─────────────────────────────────────────────────────
     public partial class CustomerDuesPage : Page
     {
         private readonly InvoiceService _service = new();
         private List<CustomerDueRow> _allDues = new();
         private readonly HashSet<int> _notifiedIds = new();
+        private readonly InstalmentService _instalmentService = new();
+
+        // ✅ Instalment Plans tab state
+        private List<InstalmentCustomerRow> _instalmentRows = new();
+        private bool _showingInstalments = false;
 
         public CustomerDuesPage()
         {
-            InitializeComponent();
-            _ = LoadAsync();
+            try
+            {
+                InitializeComponent();
+                _ = LoadAsync();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    $"Customer Dues page open karte waqt error aaya:\n\n{ex}",
+                    "Page Load Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
         // ── Load ─────────────────────────────────────────────────────────────
         private async Task LoadAsync()
         {
-            var list = await _service.GetAllInvoicesAsync();
+            try
+            {
+                await _instalmentService.RefreshStatusesAsync();
 
-            _allDues = list
-                .Where(i => i.RemainingBalance > 0)
-                .Select(i => new CustomerDueRow(i))
-                .ToList();
+                var list = await _service.GetAllInvoicesAsync();
 
-            dgDues.ItemsSource = _allDues.ToList();
+                // ✅ Simple Dues tab = only invoices that DON'T have an instalment plan.
+                // Instalment-plan customers are shown exclusively in the Instalment Plans
+                // tab (loaded below) — the two tabs no longer overlap.
+                var instalmentInvoiceIds = await _instalmentService.GetInstalmentInvoiceIdsAsync();
+
+                _allDues = list
+                    .Where(i => i.RemainingBalance > 0 && !instalmentInvoiceIds.Contains(i.CustomerInvoiceId))
+                    .Select(i => new CustomerDueRow(i))
+                    .ToList();
+
+                dgDues.ItemsSource = _allDues.ToList();
+                ShowDueNotifications();
+
+                await LoadInstalmentCustomersAsync();
+            }
+            catch (Exception ex)
+            {
+                // ✅ Prevent a hard app crash on an unhandled load error — show the real
+                // exception instead so it can be diagnosed precisely.
+                MessageBox.Show(
+                    $"Customer Dues page load karte waqt error aaya:\n\n{ex}",
+                    "Load Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        // ── Instalment Plans tab ─────────────────────────────────────────────
+        private async Task LoadInstalmentCustomersAsync()
+        {
+            try
+            {
+                var due = await _instalmentService.GetDueInstalmentsAsync();
+
+                _instalmentRows = due
+                    .GroupBy(i => i.CustomerInvoiceId)
+                    .Select(g =>
+                    {
+                        var next = g.OrderBy(i => i.DueDate).First();
+                        decimal planRemaining = g.Sum(i => i.Amount - i.PaidAmount);
+                        return new InstalmentCustomerRow
+                        {
+                            CustomerInvoiceId = g.Key,
+                            CustomerName = next.Invoice?.Customer?.Name ?? "-",
+                            Contact = next.Invoice?.Customer?.Contact ?? "-",
+                            InvoiceRef = $"INV-{g.Key:D4}",
+                            InstalmentNumber = next.InstalmentNumber,
+                            AmountDue = next.Amount - next.PaidAmount,
+                            InstalmentDueDate = next.DueDate,
+                            Status = next.Status,
+                            PlanRemaining = planRemaining,
+                            InvoiceObj = next.Invoice
+                        };
+                    })
+                    .OrderBy(r => r.InstalmentDueDate)
+                    .ToList();
+
+                dgInstalmentCustomers.ItemsSource = _instalmentRows;
+                ShowInstalmentNotifications();
+                UpdateInstalmentBadge();
+            }
+            catch (Exception ex)
+            {
+                // ✅ Don't let an Instalment-tab load failure take down the whole page/app —
+                // the "All Dues" tab should still work even if this part fails.
+                MessageBox.Show(
+                    $"Instalment Plans tab load karte waqt error aaya:\n\n{ex}",
+                    "Instalments Load Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private void ShowInstalmentNotifications()
+        {
+            var dueToday = _instalmentRows.Where(r => r.IsDueToday).ToList();
+            var overdue = _instalmentRows.Where(r => r.IsOverdue).ToList();
+
+            if (dueToday.Count == 0 && overdue.Count == 0 || !_showingInstalments)
+            {
+                pnlInstalmentNotification.Visibility = Visibility.Collapsed;
+                return;
+            }
+
+            var parts = new List<string>();
+            if (dueToday.Count > 0)
+                parts.Add($"{dueToday.Count} instalment{(dueToday.Count > 1 ? "s" : "")} due TODAY");
+            if (overdue.Count > 0)
+                parts.Add($"{overdue.Count} OVERDUE instalment{(overdue.Count > 1 ? "s" : "")}");
+
+            lblInstalmentNotificationTitle.Text = "📅  " + string.Join("  |  ", parts);
+            lstInstalmentDue.ItemsSource = dueToday.Concat(overdue).ToList();
+            pnlInstalmentNotification.Visibility = Visibility.Visible;
+        }
+
+        private void UpdateInstalmentBadge()
+        {
+            int count = _instalmentRows.Count(r => r.IsDueToday || r.IsOverdue);
+            if (count > 0)
+            {
+                txtInstalmentCount.Text = count.ToString();
+                badgeInstalmentCount.Visibility = Visibility.Visible;
+            }
+            else
+            {
+                badgeInstalmentCount.Visibility = Visibility.Collapsed;
+            }
+        }
+
+        private void DismissInstalmentNotification_Click(object sender, RoutedEventArgs e)
+            => pnlInstalmentNotification.Visibility = Visibility.Collapsed;
+
+        // ── Tab switching ─────────────────────────────────────────────────────
+        private void TabAllDues_Click(object sender, RoutedEventArgs e)
+        {
+            _showingInstalments = false;
+            dgDues.Visibility = Visibility.Visible;
+            dgInstalmentCustomers.Visibility = Visibility.Collapsed;
+            SetTabButtonStyles();
             ShowDueNotifications();
+            ShowInstalmentNotifications();
+        }
+
+        private async void TabInstalments_Click(object sender, RoutedEventArgs e)
+        {
+            _showingInstalments = true;
+            dgDues.Visibility = Visibility.Collapsed;
+            dgInstalmentCustomers.Visibility = Visibility.Visible;
+            SetTabButtonStyles();
+            await LoadInstalmentCustomersAsync();
+            ShowDueNotifications();
+        }
+
+        private void SetTabButtonStyles()
+        {
+            var activeBg = new SolidColorBrush(Color.FromRgb(0x2B, 0x57, 0x9A));
+            var inactiveBg = new SolidColorBrush(Color.FromRgb(0xE0, 0xE6, 0xED));
+            var inactiveFg = new SolidColorBrush(Color.FromRgb(0x44, 0x44, 0x44));
+
+            if (_showingInstalments)
+            {
+                btnTabInstalments.Background = activeBg;
+                btnTabInstalments.Foreground = Brushes.White;
+                btnTabAllDues.Background = inactiveBg;
+                btnTabAllDues.Foreground = inactiveFg;
+            }
+            else
+            {
+                btnTabAllDues.Background = activeBg;
+                btnTabAllDues.Foreground = Brushes.White;
+                btnTabInstalments.Background = inactiveBg;
+                btnTabInstalments.Foreground = inactiveFg;
+            }
+        }
+
+        // ── History (Instalment Plans tab) ───────────────────────────────────
+        private async void InstalmentHistory_Click(object sender, RoutedEventArgs e)
+        {
+            if ((sender as Button)?.DataContext is not InstalmentCustomerRow row) return;
+            if (row.InvoiceObj == null) return;
+
+            var win = new PaymentHistoryWindow(row.InvoiceObj)
+            {
+                Owner = Window.GetWindow(this)
+            };
+            win.ShowDialog();
+
+            // ✅ Reload both tabs if a payment was edited/deleted — keeps invoice,
+            // instalment, and account balances consistent everywhere they're linked.
+            if (win.WasModified)
+                await LoadAsync();
+        }
+
+        // ── View Plan (Instalment Plans tab) ─────────────────────────────────
+        private async void ViewInstalmentPlan_Click(object sender, RoutedEventArgs e)
+        {
+            if ((sender as Button)?.DataContext is not InstalmentCustomerRow row) return;
+            if (row.InvoiceObj == null) return;
+
+            var win = new InstalmentDetailWindow(row.InvoiceObj)
+            {
+                Owner = Window.GetWindow(this)
+            };
+            win.ShowDialog();
+
+            if (win.WasModified)
+            {
+                await LoadAsync();
+            }
+        }
+
+        // ── WhatsApp reminder (Instalment Plans tab) ─────────────────────────
+        private void NotifyInstalment_Click(object sender, RoutedEventArgs e)
+        {
+            if ((sender as Button)?.DataContext is not InstalmentCustomerRow row) return;
+
+            var confirm = MessageBox.Show(
+                $"Send WhatsApp instalment reminder to:\n\n" +
+                $"  Customer    : {row.CustomerName}\n" +
+                $"  Contact     : {row.Contact}\n" +
+                $"  Instalment  : #{row.InstalmentNumber}\n" +
+                $"  Amount Due  : ₨ {row.AmountDue:N0}\n" +
+                $"  Due Date    : {row.DueDateDisplay}",
+                "Send WhatsApp Reminder",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question);
+
+            if (confirm == MessageBoxResult.Yes)
+                OpenWhatsAppInstalment(row);
+        }
+
+        private static void OpenWhatsAppInstalment(InstalmentCustomerRow row)
+        {
+            string raw = row.Contact ?? "";
+            string phone = raw
+                .Replace(" ", "").Replace("-", "")
+                .Replace("(", "").Replace(")", "")
+                .Trim();
+
+            if (phone.StartsWith("0") && phone.Length >= 10)
+                phone = "92" + phone[1..];
+            if (!phone.StartsWith("92") && phone.Length == 10)
+                phone = "92" + phone;
+
+            string dueDate = row.InstalmentDueDate.ToString("dd MMM yyyy");
+            string amount = row.AmountDue.ToString("N0");
+
+            string message =
+                "🌟 *بِسْمِ اللہِ الرَّحْمٰنِ الرَّحِیْم* 🌟" + "\n\n" +
+                "السلام علیکم و رحمۃ اللہ و برکاتہ،" + "\n\n" +
+                $"محترم *{row.CustomerName}* صاحب،" + "\n\n" +
+                "آپ کو مودبانہ اطلاع دی جاتی ہے کہ" + "\n" +
+                "*صوابی انٹرپرائزز* کی جانب سے" + "\n" +
+                $"آپ کی قسط نمبر *{row.InstalmentNumber}* واجب الادا ہے۔" + "\n\n" +
+                "🧾 *انوائس نمبر*" + "\n" +
+                $"     {row.InvoiceRef}" + "\n\n" +
+                "💰 *قسط کی رقم*" + "\n" +
+                $"     روپے *{amount}*" + "\n\n" +
+                "📅 *ادائیگی کی تاریخ*" + "\n" +
+                $"     *{dueDate}*" + "\n\n" +
+                "⚠️ براہ کرم مقررہ تاریخ تک رقم ادا فرمائیں۔" + "\n\n" +
+                "🏪 *صوابی انٹرپرائزز*" + "\n" +
+                "جزاک اللہ خیر 🤲";
+
+            string encoded = Uri.EscapeDataString(message);
+            string url = $"https://wa.me/{phone}?text={encoded}";
+
+            try
+            {
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = url,
+                    UseShellExecute = true
+                });
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    $"WhatsApp نہیں کھل سکا۔\n\nخرابی: {ex.Message}",
+                    "WhatsApp خرابی",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+            }
         }
 
         // ── Notification banner ───────────────────────────────────────────────
@@ -106,7 +423,7 @@ namespace Ramza_EBike_Swabi.Views.Pages
                 .Select(r => r.Original)
                 .ToList();
 
-            if (dueToday.Count == 0 && overdue.Count == 0)
+            if (dueToday.Count == 0 && overdue.Count == 0 || _showingInstalments)
             {
                 pnlDueNotification.Visibility = Visibility.Collapsed;
                 return;
@@ -361,6 +678,33 @@ namespace Ramza_EBike_Swabi.Views.Pages
                 await LoadAsync();
         }
 
+        private async void Instalments_Click(object sender, RoutedEventArgs e)
+        {
+            if ((sender as Button)?.DataContext is not CustomerDueRow row) return;
+
+            var instalments = await _instalmentService.GetInstalmentsAsync(
+                row.Original.CustomerInvoiceId);
+
+            if (!instalments.Any())
+            {
+                MessageBox.Show(
+                    "Is invoice ka koi instalment plan nahi hai.",
+                    "No Instalments",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+                return;
+            }
+
+            var win = new InstalmentDetailWindow(row.Original)
+            {
+                Owner = Window.GetWindow(this)
+            };
+            win.ShowDialog();
+
+            if (win.WasModified)
+                await LoadAsync();
+        }
+
         // ── Download Excel ────────────────────────────────────────────────────
         //
         // Final column layout (18 columns, A–R):
@@ -385,13 +729,13 @@ namespace Ramza_EBike_Swabi.Views.Pages
         //   17     Q     Due Date          YES   │
         //   18     R     Status            YES  ─┘
         //
-        private void Download_Click(object sender, RoutedEventArgs e)
+        private async void Download_Click(object sender, RoutedEventArgs e)
         {
             try
             {
                 var rows = (dgDues.ItemsSource as List<CustomerDueRow>) ?? _allDues;
 
-                if (!rows.Any())
+                if (!rows.Any() && !_instalmentRows.Any())
                 {
                     MessageBox.Show("No records to export.", "Nothing to Download",
                         MessageBoxButton.OK, MessageBoxImage.Information);
@@ -741,6 +1085,275 @@ namespace Ramza_EBike_Swabi.Views.Pages
 
                 // ── Freeze header row ─────────────────────────────────────────
                 ws.SheetView.FreezeRows(headerRow);
+
+                // ══════════════════════════════════════════════════════════════
+                // SHEET 2: Instalment Plan Customers
+                // ══════════════════════════════════════════════════════════════
+                if (_instalmentRows.Any())
+                {
+                    var ws2 = wb.Worksheets.Add("Instalment Customers");
+
+                    // Full invoice+items for every invoice that has an instalment plan
+                    var instalmentIds = _instalmentRows.Select(r => r.CustomerInvoiceId).ToHashSet();
+                    var allInvoices = await _service.GetAllInvoicesAsync();
+                    var instalmentInvoices = allInvoices
+                        .Where(i => instalmentIds.Contains(i.CustomerInvoiceId))
+                        .ToList();
+
+                    // Quick lookup: invoice ID → its summary row (next instalment, status, etc.)
+                    var summaryByInvoiceId = _instalmentRows.ToDictionary(r => r.CustomerInvoiceId);
+
+                    const int T_INV_NO = 1, T_INV_DATE = 2, T_CUST_NAME = 3, T_CNIC = 4, T_CONTACT = 5,
+                              T_MODEL = 6, T_BRAND = 7, T_MOTOR = 8, T_CHASSIS = 9,
+                              T_PRICE = 10, T_QTY = 11, T_TOTAL = 12,
+                              T_NET_BILL = 13, T_PAID = 14, T_PLAN_REMAINING = 15,
+                              T_NEXT_INST = 16, T_INST_AMOUNT_DUE = 17, T_INST_DUE_DATE = 18, T_INST_STATUS = 19;
+                    const int T_TOTAL_COLS = 19;
+
+                    int r2 = 1;
+
+                    var t2Range = ws2.Range(r2, 1, r2, T_TOTAL_COLS);
+                    t2Range.Merge();
+                    t2Range.Value = "Swabi Enterprises";
+                    t2Range.Style
+                        .Font.SetBold(true).Font.SetFontSize(16).Font.SetFontColor(titleFg)
+                        .Fill.SetBackgroundColor(titleBg)
+                        .Alignment.SetHorizontal(XLAlignmentHorizontalValues.Center)
+                        .Alignment.SetVertical(XLAlignmentVerticalValues.Center);
+                    ws2.Row(r2).Height = 28;
+                    r2++;
+
+                    var s2Range = ws2.Range(r2, 1, r2, T_TOTAL_COLS);
+                    s2Range.Merge();
+                    s2Range.Value = $"Instalment Plan Customers  |  As of {DateTime.Now:dd-MMM-yyyy}";
+                    s2Range.Style
+                        .Font.SetFontSize(11).Font.SetFontColor(XLColor.FromHtml("#1E3A6E"))
+                        .Fill.SetBackgroundColor(subtitleBg)
+                        .Alignment.SetHorizontal(XLAlignmentHorizontalValues.Center)
+                        .Alignment.SetVertical(XLAlignmentVerticalValues.Center);
+                    ws2.Row(r2).Height = 22;
+                    r2++;
+
+                    var g2Range = ws2.Range(r2, 1, r2, T_TOTAL_COLS);
+                    g2Range.Merge();
+                    g2Range.Value = $"Generated on: {DateTime.Now:dd-MMM-yyyy  HH:mm}";
+                    g2Range.Style
+                        .Font.SetFontSize(9).Font.SetItalic(true).Font.SetFontColor(XLColor.Gray)
+                        .Fill.SetBackgroundColor(XLColor.FromHtml("#FAFAFA"))
+                        .Alignment.SetHorizontal(XLAlignmentHorizontalValues.Right);
+                    ws2.Row(r2).Height = 16;
+                    r2++;
+                    r2++; // spacer
+
+                    int headerRow2 = r2;
+                    string[] headers2 =
+                    {
+                        "Invoice #", "Invoice Date", "Customer Name", "CNIC", "Contact",
+                        "Bike Model", "Brand", "Motor No", "Chassis No",
+                        "Price (₨)", "Qty", "Total (₨)",
+                        "Net Bill (₨)", "Total Paid (₨)", "Plan Remaining (₨)",
+                        "Next Instalment", "Instalment Due (₨)", "Instalment Due Date", "Instalment Status"
+                    };
+                    for (int i = 0; i < headers2.Length; i++)
+                    {
+                        var cell = ws2.Cell(r2, i + 1);
+                        cell.Value = headers2[i];
+                        cell.Style
+                            .Font.SetBold(true).Font.SetFontSize(10).Font.SetFontColor(headerFg)
+                            .Fill.SetBackgroundColor(headerBg)
+                            .Alignment.SetHorizontal(XLAlignmentHorizontalValues.Center)
+                            .Alignment.SetVertical(XLAlignmentVerticalValues.Center)
+                            .Border.SetOutsideBorder(XLBorderStyleValues.Thin)
+                            .Border.SetOutsideBorderColor(borderColor);
+                    }
+                    ws2.Row(r2).Height = 20;
+                    r2++;
+
+                    int dataStartRow2 = r2;
+                    bool alt2 = false;
+
+                    foreach (var inv in instalmentInvoices)
+                    {
+                        summaryByInvoiceId.TryGetValue(inv.CustomerInvoiceId, out var summary);
+
+                        var bikeItems2 = inv.Items
+                            .Where(bi => !string.IsNullOrWhiteSpace(bi.MotorNumber))
+                            .ToList();
+                        var itemsToWrite2 = bikeItems2.Any()
+                            ? bikeItems2
+                            : new List<CustomerInvoiceItem> { null };
+
+                        int firstRow2 = r2;
+                        int bikeCount2 = itemsToWrite2.Count;
+
+                        void WritePerBikeCell2(int col, object val, bool rightAlign = false, string fmt = null)
+                        {
+                            var rowBg2 = alt2 ? altRowBg : XLColor.White;
+                            var c = ws2.Cell(r2, col);
+                            if (val is decimal dv) c.Value = XLCellValue.FromObject(dv);
+                            else if (val is int iv) c.Value = XLCellValue.FromObject(iv);
+                            else c.Value = XLCellValue.FromObject(val?.ToString() ?? "");
+                            c.Style
+                                .Fill.SetBackgroundColor(rowBg2)
+                                .Font.SetFontSize(10)
+                                .Border.SetOutsideBorder(XLBorderStyleValues.Thin)
+                                .Border.SetOutsideBorderColor(borderColor)
+                                .Alignment.SetHorizontal(rightAlign
+                                    ? XLAlignmentHorizontalValues.Right
+                                    : XLAlignmentHorizontalValues.Left);
+                            if (fmt != null) c.Style.NumberFormat.Format = fmt;
+                        }
+
+                        foreach (var bikeItem in itemsToWrite2)
+                        {
+                            decimal bikePrice2 = bikeItem?.Price ?? 0m;
+                            int bikeQty2 = bikeItem?.Quantity ?? 0;
+                            decimal bikeTotal2 = bikePrice2 * bikeQty2;
+
+                            WritePerBikeCell2(T_MODEL, bikeItem?.Model ?? "-");
+                            WritePerBikeCell2(T_BRAND, bikeItem?.Brand ?? "-");
+                            WritePerBikeCell2(T_MOTOR, bikeItem?.MotorNumber ?? "-");
+                            WritePerBikeCell2(T_CHASSIS, bikeItem?.ChassisNumber ?? "-");
+                            WritePerBikeCell2(T_PRICE, bikePrice2, rightAlign: true, fmt: "#,##0");
+                            WritePerBikeCell2(T_QTY, bikeQty2, rightAlign: true);
+                            WritePerBikeCell2(T_TOTAL, bikeTotal2, rightAlign: true, fmt: "#,##0");
+
+                            ws2.Row(r2).Height = 18;
+                            alt2 = !alt2;
+                            r2++;
+                        }
+
+                        int lastRow2 = r2 - 1;
+                        var mergeBg2 = firstRow2 % 2 == 0 ? XLColor.White : altRowBg;
+
+                        void WriteMergedColumn2(int col, object val,
+                            bool rightAlign = false, bool center = false, string fmt = null)
+                        {
+                            if (bikeCount2 > 1)
+                            {
+                                var rng = ws2.Range(firstRow2, col, lastRow2, col);
+                                rng.Merge();
+                                if (val is decimal dv) rng.Value = dv;
+                                else if (val is int iv) rng.Value = iv;
+                                else rng.Value = val?.ToString() ?? "";
+                                rng.Style
+                                    .Fill.SetBackgroundColor(mergeBg2)
+                                    .Font.SetFontSize(10)
+                                    .Border.SetOutsideBorder(XLBorderStyleValues.Thin)
+                                    .Border.SetOutsideBorderColor(borderColor)
+                                    .Alignment.SetVertical(XLAlignmentVerticalValues.Center)
+                                    .Alignment.SetHorizontal(
+                                        center ? XLAlignmentHorizontalValues.Center :
+                                        rightAlign ? XLAlignmentHorizontalValues.Right :
+                                                     XLAlignmentHorizontalValues.Left);
+                                if (fmt != null) rng.Style.NumberFormat.Format = fmt;
+                            }
+                            else
+                            {
+                                var c = ws2.Cell(firstRow2, col);
+                                if (val is decimal dv) c.Value = XLCellValue.FromObject(dv);
+                                else if (val is int iv) c.Value = XLCellValue.FromObject(iv);
+                                else c.Value = XLCellValue.FromObject(val?.ToString() ?? "");
+                                c.Style
+                                    .Fill.SetBackgroundColor(mergeBg2)
+                                    .Font.SetFontSize(10)
+                                    .Border.SetOutsideBorder(XLBorderStyleValues.Thin)
+                                    .Border.SetOutsideBorderColor(borderColor)
+                                    .Alignment.SetHorizontal(
+                                        center ? XLAlignmentHorizontalValues.Center :
+                                        rightAlign ? XLAlignmentHorizontalValues.Right :
+                                                     XLAlignmentHorizontalValues.Left);
+                                if (fmt != null) c.Style.NumberFormat.Format = fmt;
+                            }
+                        }
+
+                        WriteMergedColumn2(T_INV_NO, inv.CustomerInvoiceId, center: true);
+                        WriteMergedColumn2(T_INV_DATE, inv.InvoiceDate.ToString("dd-MMM-yyyy"), center: true);
+                        WriteMergedColumn2(T_CUST_NAME, inv.Customer?.Name ?? "-");
+                        WriteMergedColumn2(T_CNIC, inv.Customer?.CNIC ?? "-");
+                        WriteMergedColumn2(T_CONTACT, inv.Customer?.Contact ?? "-");
+
+                        WriteMergedColumn2(T_NET_BILL, inv.NetBill, rightAlign: true, fmt: "#,##0");
+                        WriteMergedColumn2(T_PAID, inv.AmountPaid, rightAlign: true, fmt: "#,##0");
+                        WriteMergedColumn2(T_PLAN_REMAINING, inv.RemainingBalance, rightAlign: true, fmt: "#,##0");
+
+                        WriteMergedColumn2(T_NEXT_INST,
+                            summary != null ? $"#{summary.InstalmentNumber}" : "-", center: true);
+                        WriteMergedColumn2(T_INST_AMOUNT_DUE,
+                            summary?.AmountDue ?? 0m, rightAlign: true, fmt: "#,##0");
+                        WriteMergedColumn2(T_INST_DUE_DATE,
+                            summary != null ? summary.InstalmentDueDate.ToString("dd-MMM-yyyy") : "-",
+                            center: true);
+                        WriteMergedColumn2(T_INST_STATUS, summary?.Status ?? "-", center: true);
+                    }
+
+                    int dataEndRow2 = r2 - 1;
+
+                    var totalLabel2 = ws2.Range(r2, 1, r2, T_CHASSIS);
+                    totalLabel2.Merge();
+                    totalLabel2.Value = "GRAND TOTAL";
+                    totalLabel2.Style
+                        .Font.SetBold(true).Font.SetFontSize(11).Font.SetFontColor(totalFg)
+                        .Fill.SetBackgroundColor(totalBg)
+                        .Alignment.SetHorizontal(XLAlignmentHorizontalValues.Right)
+                        .Border.SetOutsideBorder(XLBorderStyleValues.Medium)
+                        .Border.SetOutsideBorderColor(XLColor.FromHtml("#2B579A"));
+
+                    void WriteTotalSumCell2(int col, string colLetter)
+                    {
+                        var c = ws2.Cell(r2, col);
+                        c.FormulaA1 = $"=SUM({colLetter}{dataStartRow2}:{colLetter}{dataEndRow2})";
+                        c.Style
+                            .Font.SetBold(true).Font.SetFontSize(11).Font.SetFontColor(totalFg)
+                            .Fill.SetBackgroundColor(totalBg)
+                            .Alignment.SetHorizontal(XLAlignmentHorizontalValues.Right)
+                            .Border.SetOutsideBorder(XLBorderStyleValues.Medium)
+                            .Border.SetOutsideBorderColor(XLColor.FromHtml("#2B579A"));
+                        c.Style.NumberFormat.Format = "#,##0";
+                    }
+                    void WriteTotalEmptyCell2(int col)
+                    {
+                        ws2.Cell(r2, col).Style
+                            .Fill.SetBackgroundColor(totalBg)
+                            .Border.SetOutsideBorder(XLBorderStyleValues.Medium)
+                            .Border.SetOutsideBorderColor(XLColor.FromHtml("#2B579A"));
+                    }
+
+                    WriteTotalEmptyCell2(T_PRICE);
+                    WriteTotalSumCell2(T_QTY, "K");
+                    WriteTotalSumCell2(T_TOTAL, "L");
+                    WriteTotalSumCell2(T_NET_BILL, "M");
+                    WriteTotalSumCell2(T_PAID, "N");
+                    WriteTotalSumCell2(T_PLAN_REMAINING, "O");
+                    WriteTotalEmptyCell2(T_NEXT_INST);
+                    WriteTotalSumCell2(T_INST_AMOUNT_DUE, "Q");
+                    WriteTotalEmptyCell2(T_INST_DUE_DATE);
+                    WriteTotalEmptyCell2(T_INST_STATUS);
+
+                    ws2.Row(r2).Height = 22;
+
+                    ws2.Column(T_INV_NO).Width = 10;
+                    ws2.Column(T_INV_DATE).Width = 14;
+                    ws2.Column(T_CUST_NAME).Width = 22;
+                    ws2.Column(T_CNIC).Width = 18;
+                    ws2.Column(T_CONTACT).Width = 14;
+                    ws2.Column(T_MODEL).Width = 16;
+                    ws2.Column(T_BRAND).Width = 12;
+                    ws2.Column(T_MOTOR).Width = 16;
+                    ws2.Column(T_CHASSIS).Width = 16;
+                    ws2.Column(T_PRICE).Width = 13;
+                    ws2.Column(T_QTY).Width = 6;
+                    ws2.Column(T_TOTAL).Width = 14;
+                    ws2.Column(T_NET_BILL).Width = 14;
+                    ws2.Column(T_PAID).Width = 14;
+                    ws2.Column(T_PLAN_REMAINING).Width = 16;
+                    ws2.Column(T_NEXT_INST).Width = 14;
+                    ws2.Column(T_INST_AMOUNT_DUE).Width = 16;
+                    ws2.Column(T_INST_DUE_DATE).Width = 16;
+                    ws2.Column(T_INST_STATUS).Width = 14;
+
+                    ws2.SheetView.FreezeRows(headerRow2);
+                }
 
                 wb.SaveAs(dialog.FileName);
                 MessageBox.Show("Excel file downloaded successfully.", "Success",
