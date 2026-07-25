@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Ramza_EBike_Swabi.Data;
 
@@ -11,9 +12,11 @@ using Ramza_EBike_Swabi.Data;
 namespace RAMZA_EBIKE_SWABI.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260622034821_AddInstalmentPaymentFields")]
+    partial class AddInstalmentPaymentFields
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -383,9 +386,6 @@ namespace RAMZA_EBIKE_SWABI.Migrations
                         .HasColumnType("int");
 
                     b.Property<int>("CustomerInvoiceId")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("InstalmentId")
                         .HasColumnType("int");
 
                     b.Property<DateTime>("PaymentDate")
