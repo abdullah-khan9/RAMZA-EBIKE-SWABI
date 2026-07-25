@@ -124,69 +124,12 @@ namespace Ramza_EBike_Swabi.Views.Pages
                     txtFilterLabel.Text = $"Up to {to.Value:dd-MMM-yyyy}";
                 else
                     txtFilterLabel.Text = "Showing all-time data";
-
-                // ── Auto-fill Zakat inputs from live report figures ───────
-                txtZakatCash.Text = balance.CashBalance.ToString("F0");
-                txtZakatBank.Text = balance.BankBalance.ToString("F0");
-                txtZakatInventory.Text = inventoryWorth.ToString("F0");
-                txtZakatReceivable.Text = custRemaining.ToString("F0");
-                txtZakatVendorDue.Text = vendorRemaining.ToString("F0");
-
-                // Run Zakat calculation immediately with these defaults
-                RunZakatCalculation(
-                    balance.CashBalance,
-                    balance.BankBalance,
-                    inventoryWorth,
-                    custRemaining,
-                    vendorRemaining);
             }
             catch (Exception ex)
             {
                 MessageBox.Show($"Error loading report: {ex.Message}", "Error",
                     MessageBoxButton.OK, MessageBoxImage.Error);
             }
-        }
-
-        // ── Zakat: Calculate button click ────────────────────────────────
-        private void CalculateZakat_Click(object sender, RoutedEventArgs e)
-        {
-            if (!decimal.TryParse(txtZakatCash.Text, out decimal cash)) cash = 0;
-            if (!decimal.TryParse(txtZakatBank.Text, out decimal bank)) bank = 0;
-            if (!decimal.TryParse(txtZakatInventory.Text, out decimal inventory)) inventory = 0;
-            if (!decimal.TryParse(txtZakatReceivable.Text, out decimal receivable)) receivable = 0;
-            if (!decimal.TryParse(txtZakatVendorDue.Text, out decimal vendorDue)) vendorDue = 0;
-
-            RunZakatCalculation(cash, bank, inventory, receivable, vendorDue);
-        }
-
-        // ── Core Zakat logic ─────────────────────────────────────────────
-        private void RunZakatCalculation(
-            decimal cash, decimal bank, decimal inventory,
-            decimal receivable, decimal vendorDue)
-        {
-            decimal nisab = decimal.TryParse(txtZakatNisab.Text, out decimal n) ? n : 170000;
-
-            decimal total = cash + bank + inventory + receivable - vendorDue;
-            bool applicable = total >= nisab;
-            decimal zakatDue = applicable ? total * 0.025m : 0;
-
-            // Breakdown display
-            txtZkCash.Text = $"₨ {cash:N0}";
-            txtZkBank.Text = $"₨ {bank:N0}";
-            txtZkInventory.Text = $"₨ {inventory:N0}";
-            txtZkReceivable.Text = $"₨ {receivable:N0}";
-            txtZkVendorDue.Text = $"- ₨ {vendorDue:N0}";
-            txtZkTotal.Text = $"₨ {total:N0}";
-            txtZkNisabDisplay.Text = $"₨ {nisab:N0}";
-
-            txtZkApplicable.Text = applicable ? "Yes" : "No (below nisab)";
-            txtZkApplicable.Foreground = applicable
-                ? new System.Windows.Media.SolidColorBrush(
-                      System.Windows.Media.Color.FromRgb(15, 110, 86))
-                : new System.Windows.Media.SolidColorBrush(
-                      System.Windows.Media.Color.FromRgb(163, 45, 45));
-
-            txtZakatDue.Text = $"₨ {zakatDue:N0}";
         }
 
         private void Search_Click(object sender, RoutedEventArgs e)
