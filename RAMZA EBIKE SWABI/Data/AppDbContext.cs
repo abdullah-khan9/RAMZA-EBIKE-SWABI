@@ -28,7 +28,7 @@ namespace Ramza_EBike_Swabi.Data
         public DbSet<CustomerPaymentHistory> CustomerPaymentHistories { get; set; } = null!;
         public DbSet<VendorPaymentRecord> VendorPaymentRecords { get; set; } = null!;
         public DbSet<DocumentIssuanceRecord> DocumentIssuanceRecords { get; set; } = null!;
-
+        public DbSet<InvoiceInstalment> InvoiceInstalments { get; set; } = null!;
         public DbSet<ZakatRecord> ZakatRecords { get; set; } = null!;
         public DbSet<ZakatPayment> ZakatPayments { get; set; } = null!;
 
@@ -88,6 +88,12 @@ namespace Ramza_EBike_Swabi.Data
                 entity.Property(vb => vb.TotalTaxPaid).HasPrecision(18, 2).HasDefaultValue(0);
                 entity.Property(vb => vb.BillDate).HasDefaultValueSql("GETDATE()");
             });
+            
+            modelBuilder.Entity<InvoiceInstalment>()
+      .HasOne(i => i.Invoice)
+      .WithMany()
+      .HasForeignKey(i => i.CustomerInvoiceId)
+      .OnDelete(DeleteBehavior.Cascade);
 
             modelBuilder.Entity<DocumentIssuanceRecord>()
                 .Property(r => r.IssuanceDate).HasDefaultValueSql("GETDATE()");
