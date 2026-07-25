@@ -6,12 +6,14 @@ using System.Windows.Controls;
 using Microsoft.EntityFrameworkCore;
 using Ramza_EBike_Swabi.Data;
 using Ramza_EBike_Swabi.Models;
+using Ramza_EBike_Swabi.Services;
 
 namespace Ramza_EBike_Swabi.Views.Pages
 {
     public partial class PaymentHistoryWindow : Window
     {
         private readonly CustomerInvoice _invoice;
+        private readonly InstalmentService _instalmentService = new();
 
         // ✅ Issue 3: Callback so CustomerDuesPage can reload after changes
         public bool WasModified { get; private set; } = false;
@@ -61,7 +63,8 @@ namespace Ramza_EBike_Swabi.Views.Pages
                     PaymentMethod = r.PaymentMethod,
                     ReceivedBy = r.ReceivedBy,
                     CashTransactionId = r.CashTransactionId,
-                    AccountTransactionId = r.AccountTransactionId
+                    AccountTransactionId = r.AccountTransactionId,
+                    InstalmentId = r.InstalmentId
                 }).ToList();
         }
 
@@ -72,7 +75,14 @@ namespace Ramza_EBike_Swabi.Views.Pages
         {
             if ((sender as Button)?.DataContext is not PaymentHistoryRow row) return;
 
-            var win = new EditPaymentWindow(row) { Owner = this };
+            InvoiceInstalment? linkedInstalment = null;
+            if (row.InstalmentId.HasValue)
+            {
+                using var lookupDb = new AppDbContext();
+                linkedInstalment = await lookupDb.InvoiceInstalments.FindAsync(row.InstalmentId.Value);
+            }
+
+            var win = new EditPaymentWindow(row, linkedInstalment) { Owner = this };
             if (win.ShowDialog() != true) return;
 
             try
@@ -98,6 +108,17 @@ namespace Ramza_EBike_Swabi.Views.Pages
                 decimal newAccount = win.NewAccountAmount;
                 decimal newTotal = newCash + newAccount;
                 decimal diff = newTotal - oldTotal;
+
+                // ✅ Overpayment guard: the edited total (across all payment history for this
+                // invoice) must not push AmountPaid past NetBill.
+                decimal projectedAmountPaid = inv.AmountPaid + diff;
+                if (projectedAmountPaid > inv.NetBill)
+                {
+                    MessageBox.Show(
+                        $"Yeh tabdeeli AmountPaid (₨ {projectedAmountPaid:N0}) ko NetBill (₨ {inv.NetBill:N0}) se zyada kar degi.\n\nBraye meherbani amount check karein.",
+                        "Validation", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
 
                 // ── Update invoice totals ──
                 inv.AmountPaid = Math.Max(0, inv.AmountPaid + diff);
@@ -223,8 +244,27 @@ namespace Ramza_EBike_Swabi.Views.Pages
                 history.AmountPaidAccount = newAccount;
                 history.PaymentDate = win.NewDate;
                 history.ReceivedBy = win.NewReceivedBy;
-                history.PaymentMethod = (newCash > 0 && newAccount > 0) ? "Cash + Account"
-                                          : newAccount > 0 ? "Bank Transfer" : "Cash";
+
+                // ✅ Instalment-linked payments keep their "Instalment #N (...)" label instead
+                // of being overwritten with the generic Cash/Account text, and the linked
+                // instalment's own PaidAmount/PaidCash/PaidAccount/Status get updated to match.
+                if (history.InstalmentId.HasValue)
+                {
+                    string source = (newCash > 0 && newAccount > 0) ? "Cash + Account"
+                                   : newAccount > 0 ? "Account" : "Cash";
+                    await _instalmentService.AdjustInstalmentPaidAmountAsync(
+                        db, history.InstalmentId.Value, newCash - oldCash, newAccount - oldAccount);
+
+                    var instForLabel = await db.InvoiceInstalments.FindAsync(history.InstalmentId.Value);
+                    history.PaymentMethod = instForLabel != null
+                        ? $"Instalment #{instForLabel.InstalmentNumber} ({source})"
+                        : history.PaymentMethod;
+                }
+                else
+                {
+                    history.PaymentMethod = (newCash > 0 && newAccount > 0) ? "Cash + Account"
+                                              : newAccount > 0 ? "Bank Transfer" : "Cash";
+                }
 
                 await db.SaveChangesAsync();
 
@@ -256,7 +296,9 @@ namespace Ramza_EBike_Swabi.Views.Pages
             var confirm = MessageBox.Show(
                 $"Delete this payment of ₨ {row.AmountPaid:N0}?\n\n" +
                 $"Cash: ₨ {row.AmountPaidCash:N0}   Account: ₨ {row.AmountPaidAccount:N0}\n\n" +
-                "Account transactions will be reversed and invoice balance will be updated.",
+                (row.InstalmentId.HasValue
+                    ? "Account transactions will be reversed, the linked instalment's status will be re-calculated, and invoice balance will be updated."
+                    : "Account transactions will be reversed and invoice balance will be updated."),
                 "Confirm Delete",
                 MessageBoxButton.YesNo, MessageBoxImage.Warning);
 
@@ -310,6 +352,14 @@ namespace Ramza_EBike_Swabi.Views.Pages
                 inv.Status = inv.RemainingBalance <= 0 ? "Clear"
                            : inv.AmountPaid == 0 ? "Unpaid"
                                                        : "Partially Paid";
+
+                // ✅ Reverse the linked instalment too — otherwise it stays marked
+                // Paid/Partially Paid even though its payment was just deleted.
+                if (history.InstalmentId.HasValue)
+                {
+                    await _instalmentService.AdjustInstalmentPaidAmountAsync(
+                        db, history.InstalmentId.Value, -history.AmountPaidCash, -history.AmountPaidAccount);
+                }
 
                 // ── Delete history record ──
                 db.CustomerPaymentHistories.Remove(history);
@@ -377,5 +427,6 @@ namespace Ramza_EBike_Swabi.Views.Pages
         public string ReceivedBy { get; set; } = string.Empty;
         public int? CashTransactionId { get; set; }
         public int? AccountTransactionId { get; set; }
+        public int? InstalmentId { get; set; }
     }
 }

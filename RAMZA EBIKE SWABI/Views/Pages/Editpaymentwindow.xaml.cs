@@ -13,9 +13,17 @@ namespace Ramza_EBike_Swabi.Views.Pages
         public string NewReceivedBy { get; private set; } = string.Empty;
         public DateTime NewDate { get; private set; }
 
-        public EditPaymentWindow(PaymentHistoryRow row)
+        private readonly PaymentHistoryRow _row;
+        private readonly Ramza_EBike_Swabi.Models.InvoiceInstalment? _instalment;
+
+        // ✅ instalment: pass the linked InvoiceInstalment when this payment came from an
+        // instalment plan — the window then labels itself accordingly and caps the entry at
+        // what's still owed on THAT instalment (not just the invoice's overall NetBill).
+        public EditPaymentWindow(PaymentHistoryRow row, Ramza_EBike_Swabi.Models.InvoiceInstalment? instalment = null)
         {
             InitializeComponent();
+            _row = row;
+            _instalment = instalment;
 
             // Pre-fill with existing values
             txtCashAmount.Text = row.AmountPaidCash > 0
@@ -24,6 +32,14 @@ namespace Ramza_EBike_Swabi.Views.Pages
                 ? row.AmountPaidAccount.ToString("N2") : string.Empty;
             txtReceivedBy.Text = row.ReceivedBy;
             dpDate.SelectedDate = row.PaymentDate;
+
+            if (_instalment != null)
+            {
+                Title = $"Edit Instalment #{_instalment.InstalmentNumber} Payment";
+                txtHeaderTitle.Text = $"Edit Instalment #{_instalment.InstalmentNumber} Payment";
+                txtSubtitle.Text = $"📅 Instalment Amount: PKR {_instalment.Amount:N2}";
+                txtSubtitle.Visibility = Visibility.Visible;
+            }
         }
 
         private void Save_Click(object sender, RoutedEventArgs e)
@@ -43,6 +59,21 @@ namespace Ramza_EBike_Swabi.Views.Pages
                 MessageBox.Show("Please enter Received By.",
                     "Validation", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
+            }
+
+            // ✅ For instalment-linked payments, cap the edit at what's still owed on THAT
+            // instalment specifically (not just the invoice's overall NetBill).
+            if (_instalment != null)
+            {
+                decimal otherAlreadyPaidOnInstalment = Math.Max(0, _instalment.PaidAmount - _row.AmountPaid);
+                decimal maxAllowed = _instalment.Amount - otherAlreadyPaidOnInstalment;
+                if (cash + account > maxAllowed)
+                {
+                    MessageBox.Show(
+                        $"Yeh amount instalment #{_instalment.InstalmentNumber} ki had (PKR {maxAllowed:N2}) se zyada hai.",
+                        "Validation", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
             }
 
             NewCashAmount = cash;

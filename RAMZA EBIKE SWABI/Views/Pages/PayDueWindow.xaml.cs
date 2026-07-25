@@ -61,10 +61,22 @@ namespace Ramza_EBike_Swabi.Views.Pages
                 return;
             }
 
-            if (totalPay > _invoice.RemainingBalance)
+            // ✅ Live re-check: _invoice.RemainingBalance is whatever the Dues grid had
+            // cached when it was last loaded. Re-fetch the current value so a payment or
+            // instalment recorded elsewhere in the meantime isn't missed.
+            decimal liveRemaining;
+            using (var checkDb = new AppDbContext())
+            {
+                liveRemaining = await checkDb.CustomerInvoices
+                    .Where(i => i.CustomerInvoiceId == _invoice.CustomerInvoiceId)
+                    .Select(i => i.RemainingBalance)
+                    .FirstOrDefaultAsync();
+            }
+
+            if (totalPay > liveRemaining)
             {
                 MessageBox.Show(
-                    $"Total payment (₨ {totalPay:N0}) exceeds remaining balance (₨ {_invoice.RemainingBalance:N0}).",
+                    $"Total payment (₨ {totalPay:N0}) exceeds remaining balance (₨ {liveRemaining:N0}).",
                     "Validation", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
