@@ -33,5 +33,10 @@ namespace Ramza_EBike_Swabi.Models
         // ✅ NEW — Account transactions ka reference (reversal ke liye)
         public int? CashTransactionId { get; set; }
         public int? AccountTransactionId { get; set; }
+
+        // ✅ NEW — Agar yeh payment kisi instalment ke through hui hai, to us instalment
+        // ka reference (edit/delete par sahi instalment update/reverse karne ke liye).
+        // Null hoti hai agar payment "Pay Due" (normal) se hui ho.
+        public int? InstalmentId { get; set; }
     }
 }
