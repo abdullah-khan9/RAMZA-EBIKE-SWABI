@@ -8,15 +8,30 @@ using System.IO;
 using System.Linq;
 using System.Windows;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Ramza_EBike_Swabi.Data;
 
 namespace Ramza_EBike_Swabi
 {
     public partial class App : Application
     {
-        private const string DatabaseName = "RamzaEBikeSwabiDb";
-        private readonly string connectionString =
-            "Server=.\\SQLEXPRESS;Database=RamzaEBikeSwabiDb;Trusted_Connection=True;TrustServerCertificate=True;";
+        // ✅ No longer hardcoded — read from appsettings.json (same source the rest
+        // of the app already uses via AppDbContext.OnConfiguring). Previously this
+        // was a separate hardcoded string that could silently drift out of sync with
+        // appsettings.json, causing startup migrations AND the exit-time backup to
+        // target the wrong server/database whenever appsettings.json was changed
+        // (e.g. moved to a different SQL Server instance).
+        private string GetConnectionString()
+        {
+            var configuration = new ConfigurationBuilder()
+                .SetBasePath(AppContext.BaseDirectory)
+                .AddJsonFile("appsettings.json", optional: false)
+                .Build();
+
+            return configuration.GetConnectionString("DefaultConnection")
+                ?? throw new InvalidOperationException(
+                    "DefaultConnection not found in appsettings.json.");
+        }
 
         // ════════════════════════════════════════════════════════
         // SUPABASE LICENSE CONFIG
@@ -117,7 +132,7 @@ namespace Ramza_EBike_Swabi
             try
             {
                 var optionsBuilder = new DbContextOptionsBuilder<AppDbContext>();
-                optionsBuilder.UseSqlServer(connectionString);
+                optionsBuilder.UseSqlServer(GetConnectionString());
                 using var context = new AppDbContext(optionsBuilder.Options);
                 context.Database.Migrate();
             }
@@ -145,6 +160,9 @@ namespace Ramza_EBike_Swabi
         {
             try
             {
+                string connStr = GetConnectionString();
+                string databaseName = new SqlConnectionStringBuilder(connStr).InitialCatalog;
+
                 string backupDrive = GetNonSystemDrive();
                 string backupFolder = backupDrive != null
                     ? Path.Combine(backupDrive, "RamzaEBikeBackups")
@@ -166,10 +184,10 @@ namespace Ramza_EBike_Swabi
                 string fullPath = Path.Combine(backupFolder, fileName);
                 string safePath = fullPath.Replace("'", "''");
 
-                using var con = new SqlConnection(connectionString);
+                using var con = new SqlConnection(connStr);
                 con.Open();
                 using var cmd = new SqlCommand(
-                    $"BACKUP DATABASE [{DatabaseName}] TO DISK = N'{safePath}' WITH INIT, FORMAT",
+                    $"BACKUP DATABASE [{databaseName}] TO DISK = N'{safePath}' WITH INIT, FORMAT",
                     con)
                 { CommandTimeout = 0 };
                 cmd.ExecuteNonQuery();
