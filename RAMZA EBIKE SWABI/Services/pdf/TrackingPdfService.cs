@@ -361,14 +361,21 @@ namespace Ramza_EBike_Swabi.Services.Pdf
                     // ══════════════════════════════════════════════
                     // FOOTER
                     // ══════════════════════════════════════════════
-                    page.Footer().AlignCenter().Text(t =>
+                    page.Footer().Column(footerCol =>
                     {
-                        t.Span("Document Tracking Report  —  ")
-                         .FontSize(8).FontColor(Color.FromHex("666666"));
-                        t.Span(ShopName)
-                         .FontSize(8).Bold().FontColor(Color.FromHex("1B4079"));
-                        t.Span($"  |  {ShopPhone}  |  Generated: {DateTime.Now:dd MMM yyyy  hh:mm tt}")
-                         .FontSize(8).FontColor(Color.FromHex("666666"));
+                        footerCol.Item().AlignCenter().Text(t =>
+                        {
+                            t.Span("Document Tracking Report  —  ")
+                             .FontSize(8).FontColor(Color.FromHex("666666"));
+                            t.Span(ShopName)
+                             .FontSize(8).Bold().FontColor(Color.FromHex("1B4079"));
+                            t.Span($"  |  {ShopPhone}  |  Generated: {DateTime.Now:dd MMM yyyy  hh:mm tt}")
+                             .FontSize(8).FontColor(Color.FromHex("666666"));
+                        });
+
+                        footerCol.Item().AlignCenter().PaddingTop(2)
+                            .Text("Software by Abdullah Khan - Software Engineer - 03119484920 - abdullahkhan.tech9@gmail.com")
+                            .FontSize(7).FontColor(Color.FromHex("999999"));
                     });
                 });
             }).GeneratePdf(filePath);

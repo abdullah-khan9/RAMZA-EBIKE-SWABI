@@ -420,11 +420,18 @@ namespace Ramza_EBike_Swabi.Services.Pdf
                     // ══════════════════════════════════════════
                     // FOOTER
                     // ══════════════════════════════════════════
-                    page.Footer().AlignCenter().Text(t =>
+                    page.Footer().Column(footerCol =>
                     {
-                        t.Span("This is a computer-generated document.  ").FontSize(8);
-                        t.Span(ShopName).Bold().FontSize(8);
-                        t.Span($"  |  {ShopPhone}  |  {ShopNTN}").FontSize(8);
+                        footerCol.Item().AlignCenter().Text(t =>
+                        {
+                            t.Span("This is a computer-generated document.  ").FontSize(8);
+                            t.Span(ShopName).Bold().FontSize(8);
+                            t.Span($"  |  {ShopPhone}  |  {ShopNTN}").FontSize(8);
+                        });
+
+                        footerCol.Item().AlignCenter().PaddingTop(2)
+                            .Text("Software by Abdullah Khan - Software Engineer - 03119484920 - abdullahkhan.tech9@gmail.com")
+                            .FontSize(7).FontColor(Color.FromHex("999999"));
                     });
                 });
             }).GeneratePdf(filePath);
