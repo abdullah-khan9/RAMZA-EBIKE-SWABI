@@ -274,7 +274,13 @@ namespace Ramza_EBike_Swabi.Views.Pages
                 dgCashTransactions.ItemsSource = cashList;
                 dgAccountTransactions.ItemsSource = accountList;
 
-                txnCountHint.Text = $"Showing recent 10 transactions (Cash: {cashList.Count}, Account: {accountList.Count})";
+                // ✅ Instalment Transactions tab — reliably identified via
+                // CustomerPaymentHistory.InstalmentId, not text-guessing.
+                var instalmentTxnIds = await _accountService.GetInstalmentTransactionIdsAsync();
+                var instalmentList = allRows.Where(r => instalmentTxnIds.Contains(r.Id)).ToList();
+                dgInstalmentTransactions.ItemsSource = instalmentList;
+
+                txnCountHint.Text = $"Showing recent 10 transactions (Cash: {cashList.Count}, Account: {accountList.Count}, Instalment: {instalmentList.Count})";
 
                 var profits = await _profitService.GetRecentProfitRecordsAsync(10);
                 dgProfit.ItemsSource = profits.Select(ProfitDisplayRow.From).ToList();
@@ -313,7 +319,11 @@ namespace Ramza_EBike_Swabi.Views.Pages
             dgCashTransactions.ItemsSource = cashList;
             dgAccountTransactions.ItemsSource = accountList;
 
-            txnCountHint.Text = $"{allRows.Count} transaction(s) found (Cash: {cashList.Count}, Account: {accountList.Count})";
+            var instalmentTxnIds = await _accountService.GetInstalmentTransactionIdsAsync();
+            var instalmentList = allRows.Where(r => instalmentTxnIds.Contains(r.Id)).ToList();
+            dgInstalmentTransactions.ItemsSource = instalmentList;
+
+            txnCountHint.Text = $"{allRows.Count} transaction(s) found (Cash: {cashList.Count}, Account: {accountList.Count}, Instalment: {instalmentList.Count})";
 
             var profits = await _profitService.GetProfitByDateRangeAsync(from, to);
             dgProfit.ItemsSource = profits.Select(ProfitDisplayRow.From).ToList();
@@ -340,6 +350,7 @@ namespace Ramza_EBike_Swabi.Views.Pages
             dgTransactions.ItemsSource = null;
             dgCashTransactions.ItemsSource = null;
             dgAccountTransactions.ItemsSource = null;
+            dgInstalmentTransactions.ItemsSource = null;
             txnCountHint.Text = "Transaction history cleared.";
         }
 

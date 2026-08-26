@@ -64,7 +64,8 @@ namespace Ramza_EBike_Swabi.Views.Pages
                     ReceivedBy = r.ReceivedBy,
                     CashTransactionId = r.CashTransactionId,
                     AccountTransactionId = r.AccountTransactionId,
-                    InstalmentId = r.InstalmentId
+                    InstalmentId = r.InstalmentId,
+                    IsCreationPayment = r.IsCreationPayment
                 }).ToList();
         }
 
@@ -260,6 +261,10 @@ namespace Ramza_EBike_Swabi.Views.Pages
                         ? $"Instalment #{instForLabel.InstalmentNumber} ({source})"
                         : history.PaymentMethod;
                 }
+                else if (history.IsCreationPayment)
+                {
+                    history.PaymentMethod = "Invoice Creation";
+                }
                 else
                 {
                     history.PaymentMethod = (newCash > 0 && newAccount > 0) ? "Cash + Account"
@@ -298,7 +303,9 @@ namespace Ramza_EBike_Swabi.Views.Pages
                 $"Cash: ₨ {row.AmountPaidCash:N0}   Account: ₨ {row.AmountPaidAccount:N0}\n\n" +
                 (row.InstalmentId.HasValue
                     ? "Account transactions will be reversed, the linked instalment's status will be re-calculated, and invoice balance will be updated."
-                    : "Account transactions will be reversed and invoice balance will be updated."),
+                    : row.IsCreationPayment
+                        ? "This is the amount paid when the invoice was generated. Account transactions will be reversed and invoice balance will be updated."
+                        : "Account transactions will be reversed and invoice balance will be updated."),
                 "Confirm Delete",
                 MessageBoxButton.YesNo, MessageBoxImage.Warning);
 
@@ -386,8 +393,10 @@ namespace Ramza_EBike_Swabi.Views.Pages
         // ══════════════════════════════════════════════════════════════════════
         // ✅ Issue 1: Fixed RemainingAfter calculation
         // Starting point = netBill - amount paid at invoice creation (not in history)
+        // ✅ Now public so GenerateInvoicePage can reuse the same logic after editing
+        // the invoice's own creation-payment history row.
         // ══════════════════════════════════════════════════════════════════════
-        private static async System.Threading.Tasks.Task RecalculateRemainingAfterAsync(
+        public static async System.Threading.Tasks.Task RecalculateRemainingAfterAsync(
             AppDbContext db, int invoiceId)
         {
             var inv = await db.CustomerInvoices
@@ -428,5 +437,6 @@ namespace Ramza_EBike_Swabi.Views.Pages
         public int? CashTransactionId { get; set; }
         public int? AccountTransactionId { get; set; }
         public int? InstalmentId { get; set; }
+        public bool IsCreationPayment { get; set; }
     }
 }

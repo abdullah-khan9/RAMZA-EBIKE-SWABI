@@ -38,5 +38,12 @@ namespace Ramza_EBike_Swabi.Models
         // ka reference (edit/delete par sahi instalment update/reverse karne ke liye).
         // Null hoti hai agar payment "Pay Due" (normal) se hui ho.
         public int? InstalmentId { get; set; }
+
+        // ✅ NEW — True sirf us aik row ke liye jo invoice generate/save hone ke waqt hui
+        // payment ko represent karti hai (bill ke doran diya gaya paisa). Baqi rows (Pay Due,
+        // Instalment) ke liye hamesha false rehta hai. Isi flag se GenerateInvoicePage ka Edit
+        // form sirf "bill ke doran ki payment" dikhata/edit karta hai — baad ki Due/Instalment
+        // payments ko kabhi touch/double-count nahi karta.
+        public bool IsCreationPayment { get; set; } = false;
     }
 }

@@ -51,6 +51,19 @@ namespace Ramza_EBike_Swabi.Views.Pages
         private List<InvoiceInstalment> _existingInstalmentsSnapshot = new();
         private bool _instalmentsReplaced = false;
 
+        // ✅ Creation-payment tracking — the invoice-edit form's Cash/Account boxes now
+        // represent ONLY the amount paid when the bill was generated, never the cumulative
+        // total. This prevents the edit flow from ever touching or double-counting money
+        // collected separately via "Pay Due" or Instalments.
+        private int? _creationHistoryId = null;
+        private decimal _originalCreationPaidCash = 0m;
+        private decimal _originalCreationPaidAccount = 0m;
+        // Money already collected via Pay Due / Instalments — fixed for the duration of
+        // this edit session, never shown in or edited through the boxes above, but always
+        // included in the true RemainingBalance / NetBill math.
+        private decimal _otherPaidCash = 0m;
+        private decimal _otherPaidAccount = 0m;
+
         public ObservableCollection<CustomerInvoiceItem> BillItems { get; } = new();
 
         // ================== CONSTRUCTORS ==================
@@ -83,8 +96,7 @@ namespace Ramza_EBike_Swabi.Views.Pages
         public GenerateInvoicePage(CustomerInvoice invoice) : this()
         {
             _editingInvoice = invoice;
-            LoadInvoiceForEdit(invoice);
-            _isDirty = false;
+            _ = OpenInvoiceForEditAsync(invoice);
         }
 
         public void SetTabManager(InvoiceTabManagerPage tabManager)
@@ -313,6 +325,44 @@ namespace Ramza_EBike_Swabi.Views.Pages
                 }
                 _suppressDirty = false;
 
+                // ✅ Creation-payment tracking — find the row (if any) marking what was
+                // paid when this invoice was originally generated. Everything else already
+                // collected (Due/Instalment payments) is "other paid" — fixed, never shown
+                // in or edited through these boxes.
+                var creationRow = await db.CustomerPaymentHistories
+                    .Where(h => h.CustomerInvoiceId == freshInvoice.CustomerInvoiceId && h.IsCreationPayment)
+                    .FirstOrDefaultAsync();
+
+                _creationHistoryId = creationRow?.Id;
+                _originalCreationPaidCash = creationRow?.AmountPaidCash ?? 0m;
+                _originalCreationPaidAccount = creationRow?.AmountPaidAccount ?? 0m;
+
+                _otherPaidCash = Math.Max(0, freshInvoice.AmountPaidCash - _originalCreationPaidCash);
+                _otherPaidAccount = Math.Max(0, freshInvoice.AmountPaidAccount - _originalCreationPaidAccount);
+
+                _suppressDirty = true;
+                if (txtPaidCash != null) txtPaidCash.Text = _originalCreationPaidCash.ToString("N2");
+                if (txtPaidAccount != null) txtPaidAccount.Text = _originalCreationPaidAccount.ToString("N2");
+
+                decimal otherTotal = _otherPaidCash + _otherPaidAccount;
+                if (pnlOtherPaidHint != null && txtOtherPaidHint != null)
+                {
+                    if (otherTotal > 0)
+                    {
+                        txtOtherPaidHint.Text =
+                            $"ℹ️ PKR {otherTotal:N2} already collected separately via Pay Due / Instalments " +
+                            $"(Cash: {_otherPaidCash:N2}, Account: {_otherPaidAccount:N2}) — not shown/editable here. " +
+                            "Edit those via the Payment History window instead.";
+                        pnlOtherPaidHint.Visibility = Visibility.Visible;
+                    }
+                    else
+                    {
+                        pnlOtherPaidHint.Visibility = Visibility.Collapsed;
+                    }
+                }
+                Recalculate(null, null);
+                _suppressDirty = false;
+
                 _isDirty = false;
             }
             catch (Exception ex)
@@ -431,7 +481,10 @@ namespace Ramza_EBike_Swabi.Views.Pages
                 decimal paidCash = decimal.TryParse(txtPaidCash?.Text, out var pc) ? pc : 0;
                 decimal paidAccount = decimal.TryParse(txtPaidAccount?.Text, out var pa) ? pa : 0;
                 decimal net = total - discount;
-                decimal remaining = net - paidCash - paidAccount;
+                // ✅ True remaining balance = NetBill minus EVERYTHING ever paid — the
+                // creation-portion (editable, in these boxes) PLUS whatever was already
+                // collected separately via Pay Due / Instalments (fixed, not shown here).
+                decimal remaining = net - paidCash - paidAccount - _otherPaidCash - _otherPaidAccount;
 
                 if (txtTotal != null) txtTotal.Text = total.ToString("N2");
                 if (txtNetBill != null) txtNetBill.Text = net.ToString("N2");
@@ -498,42 +551,54 @@ namespace Ramza_EBike_Swabi.Views.Pages
 
                 Recalculate(null, null);
 
-                decimal.TryParse(txtPaidCash?.Text, out decimal newPaidCash);
-                decimal.TryParse(txtPaidAccount?.Text, out decimal newPaidAccount);
+                // ✅ These now represent ONLY the invoice-creation portion — the boxes no
+                // longer show the cumulative total (see OpenInvoiceForEditAsync).
+                decimal.TryParse(txtPaidCash?.Text, out decimal newCreationPaidCash);
+                decimal.TryParse(txtPaidAccount?.Text, out decimal newCreationPaidAccount);
 
                 bool isEdit = _editingInvoice != null;
 
-                decimal oldPaidCash = 0m;
-                decimal oldPaidAccount = 0m;
-                if (isEdit && _editingInvoice != null)
-                {
-                    bool legacy = _editingInvoice.AmountPaidCash == 0 &&
-                                  _editingInvoice.AmountPaidAccount == 0 &&
-                                  _editingInvoice.AmountPaid > 0;
-
-                    oldPaidCash = legacy ? _editingInvoice.AmountPaid : _editingInvoice.AmountPaidCash;
-                    oldPaidAccount = legacy ? 0m : _editingInvoice.AmountPaidAccount;
-                }
-
-                var invoice = BuildInvoiceObject(validItems, newPaidCash, newPaidAccount);
+                var invoice = BuildInvoiceObject(validItems, newCreationPaidCash, newCreationPaidAccount);
                 bool success;
+                int? newCreationCashTxnId = null;
+                int? newCreationAcctTxnId = null;
 
                 if (!isEdit)
                 {
                     success = await _invoiceService.AddInvoiceAsync(invoice, validItems);
 
-                    if (success)
+                    if (success && (newCreationPaidCash > 0 || newCreationPaidAccount > 0))
                     {
                         string invoiceRef = $"INV-{invoice.CustomerInvoiceId:D4}";
                         string customerName = txtName.Text.Trim();
 
-                        if (newPaidCash > 0)
-                            await _accountService.RecordInvoicePaymentAsync(
-                                newPaidCash, customerName, invoiceRef, isCash: true);
+                        if (newCreationPaidCash > 0)
+                            newCreationCashTxnId = await _accountService.RecordInvoicePaymentAsync(
+                                newCreationPaidCash, customerName, invoiceRef, isCash: true);
 
-                        if (newPaidAccount > 0)
-                            await _accountService.RecordInvoicePaymentAsync(
-                                newPaidAccount, customerName, invoiceRef, isCash: false);
+                        if (newCreationPaidAccount > 0)
+                            newCreationAcctTxnId = await _accountService.RecordInvoicePaymentAsync(
+                                newCreationPaidAccount, customerName, invoiceRef, isCash: false);
+
+                        // ✅ Record this as the invoice's own creation-payment history entry
+                        // — dated at bill generation, distinct from later Due/Instalment
+                        // payments — so it shows up properly in Payment History.
+                        using var creationDb = new Data.AppDbContext();
+                        creationDb.CustomerPaymentHistories.Add(new CustomerPaymentHistory
+                        {
+                            CustomerInvoiceId = invoice.CustomerInvoiceId,
+                            AmountPaid = newCreationPaidCash + newCreationPaidAccount,
+                            AmountPaidCash = newCreationPaidCash,
+                            AmountPaidAccount = newCreationPaidAccount,
+                            PaymentDate = invoice.InvoiceDate,
+                            ReceivedBy = customerName,
+                            PaymentMethod = "Invoice Creation",
+                            RemainingAfter = invoice.RemainingBalance,
+                            CashTransactionId = newCreationCashTxnId,
+                            AccountTransactionId = newCreationAcctTxnId,
+                            IsCreationPayment = true
+                        });
+                        await creationDb.SaveChangesAsync();
                     }
                 }
                 else
@@ -546,13 +611,65 @@ namespace Ramza_EBike_Swabi.Views.Pages
                         string invoiceRef = $"INV-{invoice.CustomerInvoiceId:D4}";
                         string customerName = txtName.Text.Trim();
 
-                        if (newPaidCash != oldPaidCash)
-                            await _accountService.RecordInvoicePaymentEditAsync(
-                                oldPaidCash, newPaidCash, customerName, invoiceRef, isCash: true);
+                        using var editDb = new Data.AppDbContext();
 
-                        if (newPaidAccount != oldPaidAccount)
-                            await _accountService.RecordInvoicePaymentEditAsync(
-                                oldPaidAccount, newPaidAccount, customerName, invoiceRef, isCash: false);
+                        var creationRow = _creationHistoryId.HasValue
+                            ? await editDb.CustomerPaymentHistories.FindAsync(_creationHistoryId.Value)
+                            : null;
+
+                        // ✅ Apply the account-balance change based ONLY on the creation-
+                        // portion diff — Due/Instalment money is completely untouched here.
+                        newCreationCashTxnId = await _accountService.ApplyInvoicePaymentEditAsync(
+                            editDb, creationRow?.CashTransactionId,
+                            _originalCreationPaidCash, newCreationPaidCash,
+                            customerName, invoiceRef, isCash: true, "[Invoice Edit]");
+
+                        newCreationAcctTxnId = await _accountService.ApplyInvoicePaymentEditAsync(
+                            editDb, creationRow?.AccountTransactionId,
+                            _originalCreationPaidAccount, newCreationPaidAccount,
+                            customerName, invoiceRef, isCash: false, "[Invoice Edit]");
+
+                        decimal newCreationTotal = newCreationPaidCash + newCreationPaidAccount;
+
+                        if (creationRow != null)
+                        {
+                            if (newCreationTotal <= 0)
+                            {
+                                editDb.CustomerPaymentHistories.Remove(creationRow);
+                            }
+                            else
+                            {
+                                creationRow.AmountPaid = newCreationTotal;
+                                creationRow.AmountPaidCash = newCreationPaidCash;
+                                creationRow.AmountPaidAccount = newCreationPaidAccount;
+                                creationRow.CashTransactionId = newCreationCashTxnId;
+                                creationRow.AccountTransactionId = newCreationAcctTxnId;
+                            }
+                        }
+                        else if (newCreationTotal > 0)
+                        {
+                            editDb.CustomerPaymentHistories.Add(new CustomerPaymentHistory
+                            {
+                                CustomerInvoiceId = invoice.CustomerInvoiceId,
+                                AmountPaid = newCreationTotal,
+                                AmountPaidCash = newCreationPaidCash,
+                                AmountPaidAccount = newCreationPaidAccount,
+                                PaymentDate = _editingInvoice!.InvoiceDate,
+                                ReceivedBy = customerName,
+                                PaymentMethod = "Invoice Creation",
+                                RemainingAfter = invoice.RemainingBalance,
+                                CashTransactionId = newCreationCashTxnId,
+                                AccountTransactionId = newCreationAcctTxnId,
+                                IsCreationPayment = true
+                            });
+                        }
+
+                        await editDb.SaveChangesAsync();
+
+                        // ✅ Keep every history row's RemainingAfter consistent after this
+                        // change — same logic Payment History itself uses.
+                        await PaymentHistoryWindow.RecalculateRemainingAfterAsync(editDb, invoice.CustomerInvoiceId);
+                        await editDb.SaveChangesAsync();
                     }
                 }
 
@@ -620,17 +737,21 @@ namespace Ramza_EBike_Swabi.Views.Pages
         // ================== BUILD INVOICE ==================
         private CustomerInvoice BuildInvoiceObject(
             List<CustomerInvoiceItem> validItems,
-            decimal paidCash = 0m,
-            decimal paidAccount = 0m)
+            decimal? explicitPaidCash = null,
+            decimal? explicitPaidAccount = null)
         {
             decimal.TryParse(txtDiscount?.Text, out var discount);
 
-            if (paidCash == 0 && paidAccount == 0)
-            {
-                decimal.TryParse(txtPaidCash?.Text, out paidCash);
-                decimal.TryParse(txtPaidAccount?.Text, out paidAccount);
-            }
+            decimal creationPaidCash = explicitPaidCash
+                ?? (decimal.TryParse(txtPaidCash?.Text, out var pc) ? pc : 0m);
+            decimal creationPaidAccount = explicitPaidAccount
+                ?? (decimal.TryParse(txtPaidAccount?.Text, out var pa) ? pa : 0m);
 
+            // ✅ Always fold in money already collected separately (Pay Due / Instalments) —
+            // this form only ever represents/edits the invoice-creation portion, but the
+            // invoice's stored AmountPaid/RemainingBalance must always reflect the true total.
+            decimal paidCash = creationPaidCash + _otherPaidCash;
+            decimal paidAccount = creationPaidAccount + _otherPaidAccount;
             decimal paid = paidCash + paidAccount;
 
             decimal.TryParse(
@@ -709,6 +830,14 @@ namespace Ramza_EBike_Swabi.Views.Pages
             if (pnlInstalmentSummary != null) pnlInstalmentSummary.Visibility = Visibility.Collapsed;
             if (btnSetupInstalments != null) btnSetupInstalments.Visibility = Visibility.Collapsed;
             if (txtInstalmentSummary != null) txtInstalmentSummary.Text = "No instalment plan set.";
+
+            // ✅ Creation-payment tracking reset
+            _creationHistoryId = null;
+            _originalCreationPaidCash = 0m;
+            _originalCreationPaidAccount = 0m;
+            _otherPaidCash = 0m;
+            _otherPaidAccount = 0m;
+            if (pnlOtherPaidHint != null) pnlOtherPaidHint.Visibility = Visibility.Collapsed;
 
             _editingInvoice = null;
             _isDirty = false;

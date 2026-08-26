@@ -213,6 +213,60 @@
                 </DataGrid>
             </TabItem>
 
+            <!-- ✅ Instalment Transactions Tab — only transactions that came from an
+                 instalment payment, so they're easy to spot separately -->
+            <TabItem Header="📅 Instalment Transactions">
+                <DataGrid x:Name="dgInstalmentTransactions" AutoGenerateColumns="False"
+                          IsReadOnly="True" CanUserAddRows="False"
+                          HeadersVisibility="Column"
+                          RowStyle="{StaticResource AllRowStyle}" RowHeight="36">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="#"        Binding="{Binding Id, Mode=OneWay}"          Width="50"/>
+                        <DataGridTextColumn Header="Date"     Binding="{Binding TransactionDate, Mode=OneWay, StringFormat={}{0:dd-MMM-yyyy hh:mm tt}}" Width="165"/>
+                        <DataGridTextColumn Header="Type"     Binding="{Binding TypeDisplay, Mode=OneWay}"  Width="210"/>
+                        <DataGridTextColumn Header="By Whom"  Binding="{Binding ByWhom, Mode=OneWay}"       Width="120"/>
+
+                        <!-- ✅ Cash Effect column -->
+                        <DataGridTemplateColumn Header="Cash Effect" Width="110">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0 0 6 0">
+                                        <TextBlock Text="{Binding AllCashArrowText}"
+                                                   Foreground="{Binding AllCashColor}"
+                                                   FontWeight="Bold" FontSize="13"
+                                                   VerticalAlignment="Center" Margin="0 0 3 0"/>
+                                        <TextBlock Text="{Binding AllCashText}"
+                                                   Foreground="{Binding AllCashColor}"
+                                                   FontWeight="Bold" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+
+                        <!-- ✅ Account Effect column -->
+                        <DataGridTemplateColumn Header="Account Effect" Width="120">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0 0 6 0">
+                                        <TextBlock Text="{Binding AllAccountArrowText}"
+                                                   Foreground="{Binding AllAccountColor}"
+                                                   FontWeight="Bold" FontSize="13"
+                                                   VerticalAlignment="Center" Margin="0 0 3 0"/>
+                                        <TextBlock Text="{Binding AllAccountText}"
+                                                   Foreground="{Binding AllAccountColor}"
+                                                   FontWeight="Bold" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+
+                        <DataGridTextColumn Header="Cash After"    Binding="{Binding CashBalanceAfter, Mode=OneWay, StringFormat=N2}"  Width="110"/>
+                        <DataGridTextColumn Header="Account After" Binding="{Binding BankBalanceAfter, Mode=OneWay, StringFormat=N2}"  Width="110"/>
+                        <DataGridTextColumn Header="Remarks"       Binding="{Binding Remarks, Mode=OneWay}" Width="*"/>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </TabItem>
+
             <!-- Profit History -->
             <TabItem Header="Profit History">
                 <Grid>
